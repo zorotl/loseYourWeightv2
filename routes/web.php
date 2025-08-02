@@ -10,10 +10,10 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', EnsureProfileIsComplete::class])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::view('setup', 'livewire.pages.setup')->name('pages.setup');
 
-    // Für Volt-Komponenten verwende Volt::route statt Route::get
-    Volt::route('setup', 'pages.setup')->name('pages.setup');
     Volt::route('meals', 'pages.meals.index')->name('pages.meals.index');
+    Volt::route('meals/{meal}', 'pages.meals.show')->name('pages.meals.show');
 });
 
 Route::middleware(['auth'])->group(function () {

@@ -5,13 +5,10 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Rule;
 use Livewire\Volt\Component;
 
-new
-#[Layout('components.layouts.app')]
-class extends Component
-{
+new #[Layout('components.layouts.app')] class extends Component {
     public Collection $meals;
 
-    #[Rule('required|string|max|100')]
+    #[Rule('required|string|max:100')]
     public string $newMealName = '';
 
     public function mount(): void
@@ -23,9 +20,12 @@ class extends Component
     {
         $validated = $this->validate();
 
-        auth()->user()->meals()->create([
-            'name' => $validated['newMealName'],
-        ]);
+        auth()
+            ->user()
+            ->meals()
+            ->create([
+                'name' => $validated['newMealName'],
+            ]);
 
         $this->newMealName = '';
         $this->loadMeals();
@@ -70,13 +70,15 @@ class extends Component
                 <li class="py-4" wire:key="{{ $meal->id }}">
                     <div class="flex items-center space-x-4">
                         <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $meal->name }}</p>
-                            <p class="truncate text-sm text-gray-500">{{ $meal->foods_count }} Zutaten - Total X kcal</p>
+                            <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $meal->name }}
+                            </p>
+                            <p class="truncate text-sm text-gray-500">{{ $meal->foods_count }} Zutaten - Total X kcal
+                            </p>
                         </div>
                         <div>
-                           <flux:button variant="outline" href="#">{{-- We'll add the link to the detail page later --}}
+                            <flux:button variant="outline" :href="route('pages.meals.show', ['meal' => $meal])" wire:navigate>
                                 Bearbeiten
-                           </flux:button>
+                            </flux:button>
                         </div>
                     </div>
                 </li>
