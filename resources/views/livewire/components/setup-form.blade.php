@@ -21,6 +21,9 @@ new class extends Component
     #[Rule('required|numeric|min:30|max:200')]
     public ?float $target_weight_kg = null;
 
+    #[Rule('required|date|after:today')] 
+    public string $target_date = '';
+
     public function mount(): void
     {
         $user = Auth::user();
@@ -29,6 +32,7 @@ new class extends Component
         $this->gender = $user->gender ?? '';
         $this->activity_level = $user->activity_level ?? '';
         $this->target_weight_kg = $user->target_weight_kg ?? '';
+        $this->target_date = $user->target_date?->format('Y-m-d') ?? '';
     }
 
     public function save()
@@ -79,6 +83,13 @@ new class extends Component
             :label="__('Zielgewicht (in kg)')"
             type="number"
             step="0.1"
+            required
+        />
+        <flux:input
+            wire:model="target_date"
+            :label="__('Zieldatum')"
+            :hint="__('Bis wann möchtest du dein Ziel erreichen?')"
+            type="date"
             required
         />
         <div class="pt-2">

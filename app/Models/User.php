@@ -28,6 +28,7 @@ class User extends Authenticatable
         'gender',
         'activity_level',
         'target_weight_kg',
+        'target_date',
     ];
 
     /**
@@ -51,6 +52,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'date_of_birth' => 'date',
+            'target_date' => 'date',
         ];
     }
 
@@ -127,13 +129,37 @@ class User extends Authenticatable
     }
 
     /**
+     * Calculates the required daily deficit based on the target date.
+     * Oder gibt einen Standardwert zurück, wenn der Benutzer zu faul war, ein Datum einzugeben.
+     */
+    public function getDailyDeficitAttribute(): int
+    {
+        if (!$this->target_date || !$this->current_weight_kg || $this->current_weight_kg <= $this->target_weight_kg) {
+            return 500; // Standard-Defizit
+        }
+
+        $daysToTarget = now()->diffInDays($this->target_date);
+
+        if ($daysToTarget <= 0) {
+            return 500; // Zieldatum ist in der Vergangenheit, nimm Standard
+        }
+
+        $totalWeightToLose = $this->current_weight_kg - $this->target_weight_kg;
+        $totalCaloriesToBurn = $totalWeightToLose * 7700; // ca. 7700 kcal pro kg Fett
+
+        // Wir deckeln das Defizit, um absurden Hungerkuren vorzubeugen.
+        $dailyDeficit = $totalCaloriesToBurn / $daysToTarget;
+
+        return (int) min($dailyDeficit, 1000); // Maximal 1000 kcal Defizit pro Tag
+    }
+
+    /**
      * Calculates the target daily calories for weight loss.
-     * Aka "Wie viel darf ich essen, um nicht für immer so auszusehen?".
-     * Ein Defizit von 500 Kalorien ist ein guter Startpunkt.
+     * Nutzt jetzt unser dynamisches Defizit.
      */
     public function getTargetCaloriesAttribute(): int
     {
-        return round($this->tdee - 500);
+        return round($this->tdee - $this->daily_deficit);
     }
 
     /**
