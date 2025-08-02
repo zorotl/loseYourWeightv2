@@ -185,4 +185,13 @@ class User extends Authenticatable
         return $this->hasMany(WeightHistory::class)->orderBy('weighed_on', 'desc');
     }
 
+    /**
+     * A user has many food log entries.
+     * Diese Methode stellt die Beziehung zu den FoodLogEntry-Modellen her.
+     */
+    public function foodLogEntries()
+    {
+        return $this->hasMany(FoodLogEntry::class);
+    }
+
 }
