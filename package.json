@@ -18,5 +18,10 @@
         "@rollup/rollup-linux-x64-gnu": "4.9.5",
         "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
         "lightningcss-linux-x64-gnu": "^1.29.1"
+    },
+    "devDependencies": {
+        "chart.js": "^4.5.0",
+        "chartjs-adapter-date-fns": "^3.0.0",
+        "date-fns": "^4.1.0"
     }
 }
