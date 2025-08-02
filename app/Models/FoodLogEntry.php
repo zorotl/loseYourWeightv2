@@ -11,7 +11,8 @@ class FoodLogEntry extends Model
 
     protected $fillable = [
         'user_id',
-        'name',
+        'food_id',
+        'quantity_grams',
         'calories',
         'consumed_at',
     ];
@@ -21,6 +22,11 @@ class FoodLogEntry extends Model
         return [
             'consumed_at' => 'datetime',
         ];
+    }
+
+    public function food()
+    {
+        return $this->belongsTo(Food::class);
     }
 
     public function user()

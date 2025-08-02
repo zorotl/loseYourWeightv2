@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Food;
 use App\Models\FoodLogEntry;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Rule;
@@ -14,7 +15,10 @@ new class extends Component
     public string $foodName = '';
 
     #[Rule('required|integer|min:0|max:5000')]
-    public int|string $calories = '';
+    public int|string $caloriesPer100g = '';
+    
+    #[Rule('required|integer|min:1|max:5000')]
+    public int|string $quantity = '';
 
     public function mount(): void
     {
@@ -25,19 +29,34 @@ new class extends Component
     {
         $validated = $this->validate();
 
+        // Find or create the food item in our new foods table.
+        // This is the core of our "manual entry" logic.
+        $food = Food::firstOrCreate(
+            [
+                'name' => $validated['foodName'],
+                'creator_id' => auth()->id(),
+                'source' => 'user',
+            ],
+            [
+                'calories' => $validated['caloriesPer100g'],
+            ]
+        );
+
+        // Now create the log entry and link it to the food.
         auth()->user()->foodLogEntries()->create([
-            'name' => $validated['foodName'],
-            'calories' => $validated['calories'],
+            'food_id' => $food->id,
+            'quantity_grams' => $validated['quantity'],
+            'calories' => round(($food->calories / 100) * $validated['quantity']),
             'consumed_at' => now(),
         ]);
         
-        // Formular zurücksetzen und Liste neu laden
-        $this->reset('foodName', 'calories');
+        $this->reset('foodName', 'caloriesPer100g', 'quantity');
         $this->loadEntries();
     }
     
     public function deleteEntry(int $entryId): void
     {
+        // Find the entry ensuring it belongs to the logged-in user. No cheating.
         $entry = FoodLogEntry::where('id', $entryId)->where('user_id', auth()->id())->first();
         
         if ($entry) {
@@ -48,7 +67,8 @@ new class extends Component
 
     public function loadEntries(): void
     {
-        $this->todaysEntries = FoodLogEntry::where('user_id', auth()->id())
+        $this->todaysEntries = FoodLogEntry::with('food') // Eager load the food data
+            ->where('user_id', auth()->id())
             ->whereDate('consumed_at', today())
             ->orderBy('consumed_at', 'desc')
             ->get();
@@ -91,12 +111,15 @@ new class extends Component
     </div>
 
     {{-- Formular für neue Einträge --}}
-    <form wire:submit="logFood" class="mt-6 flex items-end gap-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+     <form wire:submit="logFood" class="mt-6 flex items-end gap-4 border-t border-gray-200 pt-6 dark:border-gray-700">
         <div class="flex-1">
             <flux:input wire:model="foodName" :label="__('Lebensmittel')" required />
         </div>
+        <div class="w-48">
+            <flux:input wire:model="caloriesPer100g" :label="__('Kalorien pro 100g')" type="number" required />
+        </div>
         <div class="w-32">
-            <flux:input wire:model="calories" :label="__('Kalorien (kcal)')" type="number" required />
+            <flux:input wire:model="quantity" :label="__('Menge (g)')" type="number" required />
         </div>
         <div>
             <flux:button type="submit" variant="primary">
@@ -112,8 +135,9 @@ new class extends Component
                 <li class="py-4" wire:key="{{ $entry->id }}">
                     <div class="flex items-center space-x-4">
                         <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $entry->name }}</p>
-                            <p class="truncate text-sm text-gray-500">{{ $entry->consumed_at->format('H:i') }} Uhr</p>
+                            {{-- Greift jetzt auf den Namen des verknüpften Lebensmittels zu --}}
+                            <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $entry->food->name }}</p>
+                            <p class="truncate text-sm text-gray-500">{{ $entry->quantity_grams }}g - {{ $entry->consumed_at->format('H:i') }} Uhr</p>
                         </div>
                         <div class="text-right">
                            <p class="text-sm font-semibold text-indigo-600">{{ $entry->calories }} kcal</p>
@@ -123,7 +147,7 @@ new class extends Component
                 </li>
             @empty
                 <li class="py-4 text-center text-sm text-gray-500">
-                    Bisher noch nichts protokolliert. Lebst du von Luft und Selbstverachtung?
+                    Bisher noch nichts protokolliert. Ein vorbildlicher Asket oder nur vergesslich?
                 </li>
             @endforelse
         </ul>

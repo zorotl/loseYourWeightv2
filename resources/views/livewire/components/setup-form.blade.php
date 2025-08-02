@@ -6,27 +6,34 @@ use Livewire\Volt\Component;
 
 new class extends Component
 {
+    // We initialize with an empty string '', which is a defined "empty" state.
+    // The type hint `int|string` allows this for integer-based selects.
     #[Rule('required|integer|min:100|max:250')]
-    public ?int $height_cm = null;
+    public int|string $height_cm = '';
 
     #[Rule('required|date|before:today')]
-    public ?string $date_of_birth = null;
+    public string $date_of_birth = '';
 
     #[Rule('required|in:male,female')]
-    public ?string $gender = null;
+    public string $gender = '';
 
     #[Rule('required|integer|between:1,5')]
-    public ?int $activity_level = null;
+    public int|string $activity_level = '';
 
     #[Rule('required|numeric|min:30|max:200')]
-    public ?float $target_weight_kg = null;
+    public float|string $target_weight_kg = '';
 
-    #[Rule('required|date|after:today')] 
+    #[Rule('required|date|after:today')]
     public string $target_date = '';
 
+    /**
+     * Mount the component and assign the user's data.
+     * If data from the DB is null, we now fall back to an empty string ''.
+     */
     public function mount(): void
     {
         $user = Auth::user();
+        
         $this->height_cm = $user->height_cm ?? '';
         $this->date_of_birth = $user->date_of_birth?->format('Y-m-d') ?? '';
         $this->gender = $user->gender ?? '';

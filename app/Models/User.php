@@ -194,4 +194,11 @@ class User extends Authenticatable
         return $this->hasMany(FoodLogEntry::class);
     }
 
+    /**
+     * The food items manually created by this user.
+     */
+    public function createdFoods()
+    {
+        return $this->hasMany(Food::class, 'creator_id');
+    }
 }
