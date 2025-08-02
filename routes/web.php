@@ -1,20 +1,20 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\EnsureProfileIsComplete;
 
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-// Füge diese Zeile hinzu, um die Setup-Seite zu definieren und zu benennen.
-Route::view('setup', 'livewire.pages.setup')
-    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureProfileIsComplete::class])
-    ->name('pages.setup');
+Route::middleware(['auth', 'verified', EnsureProfileIsComplete::class])->group(function () {
+    Route::view('dashboard', 'dashboard')->name('dashboard');
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureProfileIsComplete::class])
-    ->name('dashboard');
+    // Für Volt-Komponenten verwende Volt::route statt Route::get
+    Volt::route('setup', 'pages.setup')->name('pages.setup');
+    Volt::route('meals', 'pages.meals.index')->name('pages.meals.index');
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');

@@ -43,4 +43,13 @@ class Food extends Model
     {
         return $this->hasMany(FoodLogEntry::class);
     }
+
+    /**
+     * The meals that this food is associated with.
+     */
+    public function meals()
+    {
+        return $this->belongsToMany(Meal::class)
+            ->withPivot('quantity_grams');
+    }
 }

@@ -201,4 +201,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Food::class, 'creator_id');
     }
+
+    /**
+     * A user has many meals.
+     * Diese Methode stellt die Beziehung zu den Meal-Modellen her.
+     */
+    public function meals()
+    {
+        return $this->hasMany(Meal::class);
+    }
 }
