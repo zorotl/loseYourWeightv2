@@ -55,6 +55,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's initials
+     */
+    public function initials(): string
+    {
+        return Str::of($this->name)
+            ->explode(' ')
+            ->take(2)
+            ->map(fn($word) => Str::substr($word, 0, 1))
+            ->implode('');
+    }
+
+    /**
      * The activity level multipliers for TDEE calculation.
      * Eine Sammlung magischer Zahlen, die irgendjemand mal für klug hielt.
      */
@@ -75,20 +87,26 @@ class User extends Authenticatable
     }
 
     /**
+     * Gets the user's most recent weight from their history.
+     * Oder null, wenn der Benutzer zu faul war, etwas einzutragen.
+     */
+    public function getCurrentWeightKgAttribute(): ?float
+    {
+        return $this->weightHistories()->first()?->weight_kg;
+    }
+
+    /**
      * Calculates the Basal Metabolic Rate (BMR) using Mifflin-St Jeor.
      * Das ist die Energie, die man verbraucht, wenn man nur rumliegt und auf den Tod wartet.
      */
     public function getBmrAttribute(): float
     {
-        if (!$this->height_cm || !$this->date_of_birth || !$this->gender) {
+        // If we don't have the necessary data, we can't calculate anything. Simple as that.
+        if (!$this->height_cm || !$this->date_of_birth || !$this->gender || !$this->current_weight_kg) {
             return 0;
         }
 
-        // We need the latest weight, which we don't have yet.
-        // For now, let's just pretend a fixed weight. We'll fix this later.
-        $weight = 80; // TEMPORARY PLACEHOLDER
-
-        $bmr = (10 * $weight) + (6.25 * $this->height_cm) - (5 * $this->age);
+        $bmr = (10 * $this->current_weight_kg) + (6.25 * $this->height_cm) - (5 * $this->age);
 
         return $this->gender === 'male' ? $bmr + 5 : $bmr - 161;
     }
@@ -124,26 +142,21 @@ class User extends Authenticatable
      */
     public function getBmiAttribute(): float
     {
-        if (!$this->height_cm) {
+        if (!$this->height_cm || !$this->current_weight_kg) {
             return 0;
         }
 
-        // We need the latest weight for BMI too. Using placeholder.
-        $weight = 80; // TEMPORARY PLACEHOLDER
         $heightInMeters = $this->height_cm / 100;
 
-        return round($weight / ($heightInMeters * $heightInMeters), 1);
+        return round($this->current_weight_kg / ($heightInMeters * $heightInMeters), 1);
     }
 
     /**
-     * Get the user's initials
+     * A user has many weight history records.
      */
-    public function initials(): string
+    public function weightHistories()
     {
-        return Str::of($this->name)
-            ->explode(' ')
-            ->take(2)
-            ->map(fn($word) => Str::substr($word, 0, 1))
-            ->implode('');
+        return $this->hasMany(WeightHistory::class)->orderBy('weighed_on', 'desc');
     }
+
 }

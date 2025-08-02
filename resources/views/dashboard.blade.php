@@ -1,8 +1,13 @@
 <x-layouts.app :title="__('Dashboard')">
+    <div class="mb-4">
+        <livewire:components.add-weight-form />
+    </div>
+
     <div class="grid auto-rows-min gap-4 md:grid-cols-3">
 
         {{-- Stat Card for Target Calories --}}
-        <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div
+            class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
             <div class="text-sm font-medium text-zinc-500">
                 {{ __('Dein tägliches Kalorienziel') }}
             </div>
@@ -20,7 +25,8 @@
         </div>
 
         {{-- Stat Card for BMI --}}
-        <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div
+            class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
             <div class="text-sm font-medium text-zinc-500">
                 {{ __('Dein Body-Mass-Index (BMI)') }}
             </div>
@@ -33,9 +39,10 @@
                 Platzhalter-Gewicht: 80 kg. Ändern wir bald.
             </p>
         </div>
-        
+
         {{-- Stat Card for Weight Goal --}}
-        <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div
+            class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
             <div class="text-sm font-medium text-zinc-500">
                 {{ __('Dein Gewichtsziel') }}
             </div>
