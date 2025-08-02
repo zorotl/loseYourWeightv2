@@ -7,8 +7,13 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Füge diese Zeile hinzu, um die Setup-Seite zu definieren und zu benennen.
+Route::view('setup', 'livewire.pages.setup')
+    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureProfileIsComplete::class])
+    ->name('pages.setup');
+
 Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureProfileIsComplete::class])
     ->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
@@ -19,4 +24,4 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
