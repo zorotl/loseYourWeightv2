@@ -11,7 +11,7 @@ class FoodFactory extends Factory
         return [
             'name' => fake()->word(),
             'brand' => fake()->company(),
-            'calories' => fake()->numberBetween(50, 800),
+            'calories' => fake()->numberBetween(50, 500),
             'source' => 'user',
             'creator_id' => null, // We'll set this when we create the user
         ];

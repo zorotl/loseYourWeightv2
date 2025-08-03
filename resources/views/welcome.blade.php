@@ -5,11 +5,12 @@
         <section class="text-center">
             <div class="container mx-auto px-4 py-16 sm:py-24">
                 <h1 class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
-                    Kalorienzählen ohne Kopfschmerzen.
-                    <span class="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">Und ohne Kosten.</span>
+                    Kalorienzählen ohne Kopfschmerzen.<br>
+                    <span class="bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">Und ohne Kosten.</span>                    
                 </h1>
                 <p class="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-                    Alle Kernfunktionen, die du zum Abnehmen brauchst. Keine Abofallen, keine Premium-Features, keine Ausreden mehr. Für immer kostenlos.
+                    Alles, was du zum Kalorienzählen und Abnehmen brauchst.<br>
+                    <span class="font-bold">Keine Abofallen, keine Premium-Features, keine Ausreden.</span>
                 </p>
                 <div class="mt-10">
                     <a href="{{ route('register') }}" class="rounded-md bg-indigo-600 px-8 py-3 text-lg font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">

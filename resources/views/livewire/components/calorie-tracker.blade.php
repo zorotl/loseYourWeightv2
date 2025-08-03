@@ -325,7 +325,7 @@ new class extends Component
                 </li>
             @empty
                 <li class="py-4 text-center text-sm text-gray-500">
-                    Bisher noch nichts protokolliert. Ein vorbildlicher Asket oder nur vergesslich?
+                    Bisher noch nichts erfasst. Bist du im Hungerstreik?
                 </li>
             @endforelse
         </ul>

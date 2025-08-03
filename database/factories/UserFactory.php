@@ -32,7 +32,7 @@ class UserFactory extends Factory
 
             // Unsere neuen Felder mit realistischen Werten
             'height_cm' => fake()->numberBetween(150, 200),
-            'date_of_birth' => fake()->dateTimeBetween('-50 years', '-18 years'),
+            'date_of_birth' => fake()->dateTimeBetween('-75 years', '-16 years'),
             'gender' => fake()->randomElement(['male', 'female']),
             'activity_level' => fake()->numberBetween(1, 5),
             'target_weight_kg' => fake()->randomFloat(1, 60, 90),
