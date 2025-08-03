@@ -7,7 +7,7 @@ new class extends Component
 {
     /**
      * An empty method that listens for the 'weight-saved' event.
-     * Its mere existence makes Livewire re-render the component. Spooky.
+     * Its mere existence makes Livewire re-render the component.
      */
     #[On('weight-saved')]
     public function refresh(): void
@@ -16,17 +16,39 @@ new class extends Component
     }
 }; ?>
 
-<div class="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-4">
+{{-- Grid updated to handle up to 6 items gracefully --}}
+<div class="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3">   
+    {{-- NEW Stat Card for Maintenance Calories (TDEE) --}}
+    <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div class="text-sm font-medium text-zinc-500">Erhaltungsbedarf</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-4xl font-bold tracking-tight">{{ round(auth()->user()->tdee) }}</span>
+            <span class="text-lg font-medium text-zinc-500">kcal</span>
+        </div>
+        <p class="text-xs text-zinc-500">Kalorien, um dein Gewicht zu halten.</p>
+    </div>
+
     {{-- Stat Card for Target Calories --}}
     <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
-        <div class="text-sm font-medium text-zinc-500">Tägliches Kalorienziel</div>
+        <div class="text-sm font-medium text-zinc-500">Dein tägliches Kalorienziel</div>
         <div class="flex items-baseline gap-2">
             <span class="text-4xl font-bold tracking-tight">{{ auth()->user()->target_calories }}</span>
             <span class="text-lg font-medium text-zinc-500">kcal</span>
         </div>
+        <p class="text-xs text-zinc-500">Spare tägliche {{ auth()->user()->daily_deficit }} kcal um dein Ziel zu erreichen.</p>
     </div>
 
-    {{-- NEUE Stat Card for Current Weight --}}
+    {{-- NEW Stat Card for Daily Deficit --}}
+    <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div class="text-sm font-medium text-zinc-500">Geplantes Defizit</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-4xl font-bold tracking-tight">{{ auth()->user()->daily_deficit }}</span>
+            <span class="text-lg font-medium text-zinc-500">kcal</span>
+        </div>
+        <p class="text-xs text-zinc-500">Die tägliche Differenz zu deinem Ziel.</p>
+    </div>
+
+    {{-- Stat Card for Current Weight --}}
     <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
         <div class="text-sm font-medium text-zinc-500">Aktuelles Gewicht</div>
         @if($weight = auth()->user()->current_weight_kg)
@@ -41,14 +63,6 @@ new class extends Component
             <p class="text-zinc-500">Noch kein Gewicht eingetragen.</p>
         @endif
     </div>
-
-    {{-- Stat Card for BMI --}}
-    <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
-        <div class="text-sm font-medium text-zinc-500">Body-Mass-Index (BMI)</div>
-        <div class="flex items-baseline gap-2">
-            <span class="text-4xl font-bold tracking-tight">{{ auth()->user()->bmi }}</span>
-        </div>
-    </div>
     
     {{-- Stat Card for Weight Goal --}}
     <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
@@ -62,5 +76,14 @@ new class extends Component
                 Geplant zu erreichen: {{ $timeRemaining }}
             </p>
         @endif
+    </div>
+
+    {{-- Stat Card for BMI --}}
+    <div class="relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <div class="text-sm font-medium text-zinc-500">Body-Mass-Index (BMI)</div>
+        <div class="flex items-baseline gap-2">
+            <span class="text-4xl font-bold tracking-tight">{{ auth()->user()->bmi }}</span>
+        </div>
+        <p class="text-xs text-zinc-500">Dein Ziel-BMI: {{ auth()->user()->target_bmi }}</p>
     </div>
 </div>

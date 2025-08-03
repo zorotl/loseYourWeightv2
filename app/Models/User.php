@@ -180,6 +180,21 @@ class User extends Authenticatable
     }
 
     /**
+     * Calculates the Body Mass Index (BMI) for the target weight.
+     * Eine Vorschau auf die glorreiche, leichtere Zukunft.
+     */
+    public function getTargetBmiAttribute(): float
+    {
+        if (!$this->height_cm || !$this->target_weight_kg) {
+            return 0;
+        }
+
+        $heightInMeters = $this->height_cm / 100;
+
+        return round($this->target_weight_kg / ($heightInMeters * $heightInMeters), 1);
+    }
+
+    /**
      * A user has many weight history records.
      */
     public function weightHistories()
