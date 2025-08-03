@@ -24,7 +24,7 @@
         </main>
 
         {{-- Simple Footer --}}
-        <footer class="mt-12 bg-gray-50 py-8 dark:bg-zinc-800">
+        <footer class="bg-gray-50 py-8 dark:bg-zinc-800">
             <div class="container mx-auto px-4 text-center text-sm text-gray-500">
                 <div class="flex justify-center space-x-6">
                     <a href="{{ route('terms') }}" wire:navigate class="hover:underline">AGB</a>
