@@ -20,14 +20,15 @@
         </section>
 
         {{-- 2. Features Section --}}
-        <section class="container mx-auto px-4">
-            <div class="mx-auto max-w-xl text-center">
-                <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">Alles was du brauchst. Nichts was du nicht brauchst.</h2>
-                <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
-                    Wir konzentrieren uns auf die Werkzeuge, die wirklich einen Unterschied machen.
-                </p>
-            </div>
-            <div class="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+        <section class="bg-gray-50 dark:bg-zinc-800 py-24 sm:py-32">
+            <div class="container mx-auto px-4">
+                <div class="mx-auto max-w-xl text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">Alles was du brauchst. Nichts was du nicht brauchst.</h2>
+                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
+                        Wir konzentrieren uns auf die Werkzeuge, die wirklich einen Unterschied machen.
+                    </p>
+                </div>
+            <div class="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 md:mx-0 md:max-w-none md:grid-cols-3">
                 {{-- Feature 1 --}}
                 <div class="flex flex-col items-center gap-y-4 text-center">
                     <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-600 text-white">
@@ -89,8 +90,8 @@
         </section>
 
         {{-- 4. FAQ Section --}}
-        <section class="container mx-auto px-4">
-            <div class="mx-auto max-w-3xl">
+        <section class="bg-gray-50 dark:bg-zinc-800 py-24 sm:py-32">
+            <div class="container mx-auto px-4">
                 <h2 class="text-3xl font-bold tracking-tight text-center text-gray-900 dark:text-white sm:text-4xl">Häufig gestellte Fragen</h2>
                 <div class="mt-10 space-y-4" x-data="{ open: null }">
                     {{-- FAQ 1 --}}

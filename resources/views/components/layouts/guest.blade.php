@@ -1,10 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        <meta charset="utf-g">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{{ config('app.name', 'Laravel') }}</title>
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @include('partials.head')
     </head>
     <body class="min-h-screen bg-white font-sans text-gray-900 antialiased dark:bg-zinc-900 dark:text-gray-100">
 
@@ -37,6 +34,6 @@
                 <p class="mt-4">&copy; {{ date('Y') }} {{ config('app.name') }}. Alle Rechte vorbehalten. Weil wir das so sagen.</p>
             </div>
         </footer>
-
+        @fluxScripts
     </body>
 </html>
