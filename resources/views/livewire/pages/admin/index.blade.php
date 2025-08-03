@@ -2,18 +2,27 @@
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
+use Livewire\WithPagination;
 
 new
 #[Layout('components.layouts.app')]
 class extends Component
 {
-    public Collection $users;
+    use WithPagination;
+
+    public string $search = '';
 
     public function mount(): void
     {
-        $this->loadUsers();
+        Gate::authorize('view-admin-panel');
+    }
+    
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function deleteUser(int $userId): void
@@ -25,29 +34,37 @@ class extends Component
         
         $user = User::withTrashed()->findOrFail($userId);
         $user->delete();
-        $this->loadUsers();
         $this->dispatch('show-toast', message: 'Benutzer wurde verbannt.');
     }
 
-    /**
-     * New method to restore a soft-deleted user.
-     */
     public function restoreUser(int $userId): void
     {
         $user = User::withTrashed()->findOrFail($userId);
         $user->restore();
-        $this->loadUsers();
         $this->dispatch('show-toast', message: 'Benutzer wurde wiederhergestellt.');
     }
 
-    public function loadUsers(): void
+    public function with(): array
     {
-        $this->users = User::withTrashed()->latest()->get();
+        $users = User::withTrashed()
+            ->when($this->search, function ($query) {
+                $query->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('email', 'like', '%' . $this->search . '%');
+            })
+            ->latest()
+            ->paginate(15);
+            
+        return ['users' => $users];
     }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
     <h1 class="text-2xl font-bold tracking-tight">Admin-Dashboard: Benutzerverwaltung</h1>
+
+    {{-- Search Input --}}
+    <div class="w-full md:w-1/3">
+        <flux:input wire:model.live.debounce.300ms="search" placeholder="Suche nach Name oder Email..." />
+    </div>
 
     <div class="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
         <table class="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -86,5 +103,9 @@ class extends Component
                 @endforeach
             </tbody>
         </table>
+    </div>
+
+    <div class="mt-4">
+        {{ $users->links() }}
     </div>
 </div>

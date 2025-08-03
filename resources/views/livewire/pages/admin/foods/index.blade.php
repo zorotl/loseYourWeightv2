@@ -14,6 +14,8 @@ class extends Component
 {
     use WithPagination;
 
+    public string $search = '';
+
     public bool $showEditModal = false;
     public ?Food $editingFood = null;
 
@@ -27,6 +29,12 @@ class extends Component
     public function mount(): void
     {
         Gate::authorize('view-admin-panel');
+    }
+    
+    // Resets the page when the search term is updated to prevent pagination issues
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function editFood(int $foodId): void
@@ -68,14 +76,28 @@ class extends Component
 
     public function with(): array
     {
+        // The query is now filtered by the search term
+        $foods = Food::with('creator')
+            ->when($this->search, function ($query) {
+                $query->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('brand', 'like', '%' . $this->search . '%');
+            })
+            ->latest()
+            ->paginate(15);
+
         return [
-            'foods' => Food::with('creator')->latest()->paginate(15),
+            'foods' => $foods,
         ];
     }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
     <h1 class="text-2xl font-bold tracking-tight">Admin: Lebensmittel-Verwaltung</h1>
+
+    {{-- Search Input --}}
+    <div class="w-full md:w-1/3">
+        <flux:input wire:model.live.debounce.300ms="search" placeholder="Suche nach Name oder Marke..." />
+    </div>
 
     <div class="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
         <table class="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -120,7 +142,7 @@ class extends Component
         {{ $foods->links() }}
     </div>
 
-    {{-- Edit Modal --}}
+    {{-- Das Edit Modal bleibt exakt gleich --}}
     @if($showEditModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" x-data @keydown.escape.window="$wire.closeModal()">
             <div @click.away="$wire.closeModal()" class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-lg dark:bg-neutral-800">
