@@ -14,12 +14,16 @@ class extends Component
 {
     public Meal $meal;
 
+    // Properties for editing
+    #[Rule('required|string|max:100')]
+    public string $mealName;
+    #[Rule('required|array')]
+    public array $quantities = [];
+
     // Search properties
     public string $search = '';
     public array $searchResults = [];
     public ?array $selectedFood = null;
-
-    // Add ingredient property
     #[Rule('required|integer|min:1|max:5000')]
     public int|string $quantity = '';
 
@@ -27,8 +31,52 @@ class extends Component
     {
         $this->authorize('view', $meal);
         $this->meal->load('foods');
+        $this->mealName = $this->meal->name;
+        $this->updateQuantitiesArray();
     }
 
+    public function updateName(): void
+    {
+        $this->validateOnly('mealName');
+        $this->meal->update(['name' => $this->mealName]);
+        $this->dispatch('show-toast', message: 'Name aktualisiert.');
+    }
+
+    public function updateQuantity(int $foodId): void
+    {
+        $this->validate(['quantities.'.$foodId => 'required|integer|min:1|max:9999']);
+        $this->meal->foods()->updateExistingPivot($foodId, [
+            'quantity_grams' => $this->quantities[$foodId]
+        ]);
+        $this->meal->load('foods'); // Reload to recalculate total calories
+    }
+
+    public function addIngredient(): void
+    {
+        $this->validateOnly('quantity');
+        if (!$this->selectedFood) return;
+        $food = Food::firstOrCreate(
+            ['source' => $this->selectedFood['source'], 'source_id' => $this->selectedFood['source_id']],
+            ['name' => $this->selectedFood['name'], 'brand' => $this->selectedFood['brand'], 'calories' => $this->selectedFood['calories']]
+        );
+        $this->meal->foods()->syncWithoutDetaching([$food->id => ['quantity_grams' => $this->quantity]]);
+        $this->reset('search', 'searchResults', 'selectedFood', 'quantity');
+        $this->meal->load('foods');
+        $this->updateQuantitiesArray();
+    }
+
+    public function removeIngredient(int $foodId): void
+    {
+        $this->meal->foods()->detach($foodId);
+        $this->meal->load('foods');
+        $this->updateQuantitiesArray();
+    }
+
+    protected function updateQuantitiesArray(): void
+    {
+        $this->quantities = $this->meal->foods->pluck('pivot.quantity_grams', 'id')->all();
+    }
+    
     // Almost identical to the calorie-tracker search
     public function updatedSearch(string $value): void
     {
@@ -63,32 +111,7 @@ class extends Component
         $this->searchResults = [];
         $this->search = $this->selectedFood['name'];
     }
-
-    // New method to add the selected food as an ingredient to the meal
-    public function addIngredient(): void
-    {
-        $this->validateOnly('quantity');
-        if (!$this->selectedFood) return;
-
-        $food = Food::firstOrCreate(
-            ['source' => $this->selectedFood['source'], 'source_id' => $this->selectedFood['source_id']],
-            ['name' => $this->selectedFood['name'], 'brand' => $this->selectedFood['brand'], 'calories' => $this->selectedFood['calories']]
-        );
-
-        // Attach the food to the meal using the pivot table
-        $this->meal->foods()->attach($food->id, ['quantity_grams' => $this->quantity]);
-
-        $this->reset('search', 'searchResults', 'selectedFood', 'quantity');
-        $this->meal->load('foods'); // Reload the ingredients list
-    }
-
-    // New method to remove an ingredient from the meal
-    public function removeIngredient(int $foodId): void
-    {
-        $this->meal->foods()->detach($foodId);
-        $this->meal->load('foods'); // Reload the ingredients list
-    }
-
+    
     #[Computed]
     public function totalCalories(): int
     {
@@ -99,23 +122,28 @@ class extends Component
             return $carry + $ingredientCalories;
         }, 0));
     }
+
 }; ?>
 
-<div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
+<div class="flex h-full w-full flex-1 flex-col gap-6 rounded-xl">
     <div>
         <a href="{{ route('pages.meals.index') }}" wire:navigate class="text-sm text-indigo-600 hover:underline">&larr; Zurück zur Übersicht</a>
     </div>
 
-    <div class="flex flex-col gap-1.5">
-        <h1 class="text-2xl font-bold tracking-tight">
-            Mahlzeit bearbeiten: <span class="text-indigo-600">{{ $meal->name }}</span>
+    {{-- Meal Name Editing --}}
+    <div x-data="{ editing: false }">
+        <h1 class="text-2xl font-bold tracking-tight" x-show="!editing" @click="editing = true; $nextTick(() => $refs.mealNameInput.focus())">
+            Mahlzeit: <span class="text-indigo-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md px-2 py-1">{{ $mealName }}</span>
         </h1>
-        <p class="text-sm text-zinc-500">
+        <div x-show="editing" @click.away="editing = false">
+            <flux:input wire:model="mealName" x-ref="mealNameInput" @keydown.enter="editing = false; $wire.updateName()" @keydown.escape="editing = false" />
+        </div>
+        <p class="mt-2 text-sm text-zinc-500">
             Gesamtkalorien: <span class="font-bold">{{ $this->totalCalories() }} kcal</span>
         </p>
     </div>
 
-    {{-- The ingredient search and add form --}}
+    {{-- The ingredient search and add form remains the same --}}
     <div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">Zutat hinzufügen</h3>
         
@@ -151,16 +179,19 @@ class extends Component
         @endif
     </div>
     
-    {{-- List of existing ingredients --}}
+    {{-- List of existing ingredients with inline editing --}}
     <div class="flow-root">
-        <h3 class="mt-6 text-lg font-medium text-gray-900 dark:text-white">Zutaten</h3>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Zutaten</h3>
         <ul role="list" class="mt-4 -my-5 divide-y divide-gray-200 dark:divide-gray-700">
             @forelse($meal->foods as $food)
                 <li class="py-4" wire:key="food-{{ $food->id }}">
                     <div class="flex items-center space-x-4">
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $food->name }}</p>
-                            <p class="truncate text-sm text-gray-500">{{ $food->pivot->quantity_grams }}g</p>
+                            <div class="flex items-center gap-2">
+                                <input type="number" wire:model="quantities.{{ $food->id }}" wire:keydown.enter="updateQuantity({{ $food->id }})" wire:blur="updateQuantity({{ $food->id }})" class="w-20 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700">
+                                <span class="text-sm text-gray-500">g</span>
+                            </div>
                         </div>
                         <div>
                            <button wire:click="removeIngredient({{ $food->id }})" class="text-sm text-red-500 hover:text-red-700">
@@ -171,7 +202,7 @@ class extends Component
                 </li>
             @empty
                 <li class="py-4 text-center text-sm text-gray-500">
-                    Diese Mahlzeit hat noch keine Zutaten. Ein sehr minimalistisches Rezept.
+                    Diese Mahlzeit hat noch keine Zutaten.
                 </li>
             @endforelse
         </ul>
