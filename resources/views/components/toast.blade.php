@@ -13,7 +13,7 @@
             this.timeout = setTimeout(() => this.show = false, 3000);
         }
     }"
-    @show-toast.window="showToast($event)"
+    x-on:show-toast.window="showToast($event)"
     x-show="show"
     x-transition:enter="transform ease-out duration-300 transition"
     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
