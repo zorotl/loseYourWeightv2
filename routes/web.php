@@ -24,4 +24,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
+// ADMIN ROUTEN
+Route::middleware(['auth', 'verified', 'can:view-admin-panel'])->prefix('admin')->group(function () {
+    Volt::route('/', 'pages.admin.index')->name('admin.index');
+});
+
 require __DIR__ . '/auth.php';
