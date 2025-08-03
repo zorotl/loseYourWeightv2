@@ -25,8 +25,9 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ADMIN ROUTEN
-Route::middleware(['auth', 'verified', 'can:view-admin-panel'])->prefix('admin')->group(function () {
-    Volt::route('/', 'pages.admin.index')->name('admin.index');
+Route::middleware(['auth', 'verified', 'can:view-admin-panel'])->prefix('admin')->name('admin.')->group(function () {
+    Volt::route('/', 'pages.admin.index')->name('index');
+    Volt::route('foods', 'pages.admin.foods.index')->name('foods.index');
 });
 
 require __DIR__ . '/auth.php';

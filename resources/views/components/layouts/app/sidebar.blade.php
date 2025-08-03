@@ -19,6 +19,16 @@
                 </flux:navlist.group>
             </flux:navlist>
 
+            {{-- ADMIN NAVIGATION (wird nur für Admins angezeigt) --}}
+            @can('view-admin-panel')
+                <flux:navlist variant="outline">
+                    <flux:navlist.group :heading="__('Administration')" class="grid">
+                        <flux:navlist.item icon="users" :href="route('admin.index')" :current="request()->routeIs('admin.index')" wire:navigate>{{ __('Benutzer') }}</flux:navlist.item>
+                        <flux:navlist.item icon="beaker" :href="route('admin.foods.index')" :current="request()->routeIs('admin.foods.index')" wire:navigate>{{ __('Lebensmittel') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
+            @endcan
+
             <flux:spacer />
 
             <flux:navlist variant="outline">                
