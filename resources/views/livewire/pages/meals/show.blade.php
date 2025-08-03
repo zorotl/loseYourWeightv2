@@ -132,10 +132,21 @@ class extends Component
 
     {{-- Meal Name Editing --}}
     <div x-data="{ editing: false }">
-        <h1 class="text-2xl font-bold tracking-tight" x-show="!editing" @click="editing = true; $nextTick(() => $refs.mealNameInput.focus())">
-            Mahlzeit: <span class="text-indigo-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md px-2 py-1">{{ $mealName }}</span>
-        </h1>
-        <div x-show="editing" @click.away="editing = false">
+        <div 
+            x-show="!editing" 
+            @click="editing = true; $nextTick(() => $refs.mealNameInput.focus())"
+            class="inline-flex cursor-pointer items-center gap-2 rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+            <h1 class="text-2xl font-bold tracking-tight">
+                Mahlzeit: <span class="text-indigo-700">{{ $mealName }}</span>
+            </h1>
+            {{-- Pencil Icon to indicate editability --}}
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <div x-show="editing" @click.away="editing = false" x-cloak>
             <flux:input wire:model="mealName" x-ref="mealNameInput" @keydown.enter="editing = false; $wire.updateName()" @keydown.escape="editing = false" />
         </div>
         <p class="mt-2 text-sm text-zinc-500">
@@ -189,7 +200,13 @@ class extends Component
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $food->name }}</p>
                             <div class="flex items-center gap-2">
-                                <input type="number" wire:model="quantities.{{ $food->id }}" wire:keydown.enter="updateQuantity({{ $food->id }})" wire:blur="updateQuantity({{ $food->id }})" class="w-20 rounded-md border-gray-300 text-sm dark:border-gray-600 dark:bg-gray-700">
+                                <input 
+                                    type="number" 
+                                    wire:model="quantities.{{ $food->id }}" 
+                                    wire:keydown.enter="updateQuantity({{ $food->id }})" 
+                                    wire:blur="updateQuantity({{ $food->id }})" 
+                                    class="px-2 py-1 w-20 rounded-md text-sm shadow-sm transition-colors ring-2 ring-indigo-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 dark:bg-gray-700 dark:text-white"
+                                >
                                 <span class="text-sm text-gray-500">g</span>
                             </div>
                         </div>
