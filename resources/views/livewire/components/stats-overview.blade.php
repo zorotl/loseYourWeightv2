@@ -45,7 +45,7 @@ new class extends Component
             <span class="text-4xl font-bold tracking-tight">{{ auth()->user()->daily_deficit }}</span>
             <span class="text-lg font-medium text-zinc-500">kcal</span>
         </div>
-        <p class="text-xs text-zinc-500">Die tägliche Differenz zu deinem Ziel.</p>
+        <p class="text-xs text-zinc-500">{{ auth()->user()->deficit_feedback }}</p>
     </div>
 
     {{-- Stat Card for Current Weight --}}

@@ -71,6 +71,11 @@ class User extends Authenticatable
     }
 
     /**
+     * Approx. kcal to burn to lose 1kg of body fat.
+     */
+    private const KCAL_PER_KG_FAT = 7350;
+
+    /**
      * The activity level multipliers for TDEE calculation.
      * Eine Sammlung magischer Zahlen, die irgendjemand mal für klug hielt.
      */
@@ -136,23 +141,47 @@ class User extends Authenticatable
      */
     public function getDailyDeficitAttribute(): int
     {
-        if (!$this->target_date || !$this->current_weight_kg || $this->current_weight_kg <= $this->target_weight_kg) {
-            return 500; // Standard-Defizit
+        // If the goal is reached or the user wants to gain/maintain, the deficit is 0.
+        if (!$this->current_weight_kg || $this->current_weight_kg <= $this->target_weight_kg) {
+            return 0;
+        }
+
+        // If the target date is in the past, fall back to a sensible default (maintenance).
+        if (!$this->target_date || $this->target_date->isPast()) {
+            return 0;
         }
 
         $daysToTarget = now()->diffInDays($this->target_date);
 
         if ($daysToTarget <= 0) {
-            return 500; // Zieldatum ist in der Vergangenheit, nimm Standard
+            return 0;
         }
 
         $totalWeightToLose = $this->current_weight_kg - $this->target_weight_kg;
-        $totalCaloriesToBurn = $totalWeightToLose * 7700; // ca. 7700 kcal pro kg Fett
+        $totalCaloriesToBurn = $totalWeightToLose * self::KCAL_PER_KG_FAT;
 
-        // Wir deckeln das Defizit, um absurden Hungerkuren vorzubeugen.
         $dailyDeficit = $totalCaloriesToBurn / $daysToTarget;
 
-        return (int) min($dailyDeficit, 1000); // Maximal 1000 kcal Defizit pro Tag
+        // Cap the deficit to a reasonable maximum.
+        return (int) min($dailyDeficit, 1000);
+    }
+
+    /**
+     * Provides feedback based on the current daily deficit.
+     * Ein bisschen Motivation, damit du nicht aufgibst.
+     */
+    public function getDeficitFeedbackAttribute(): string
+    {
+        $deficit = $this->daily_deficit;
+
+        return match (true) {
+            $deficit <= 0 => 'Im Gleichgewicht. Perfekt, um das Gewicht zu halten.',
+            $deficit < 300 => 'Ein sanfter Start. Jede Reise beginnt mit einem kleinen Schritt.',
+            $deficit <= 550 => 'Der goldene Mittelweg. Effektiv und nachhaltig. Sehr vernünftig.',
+            $deficit <= 750 => 'Ambitioniert! Das bringt schnelle Ergebnisse, aber achte auf deine Energie.',
+            $deficit < 1000 => 'Sehr aggressiver Kurs. Pass auf, dass du nicht vom Fleisch fällst!',
+            default => 'Maximum erreicht. Eventuell das Zieldatum etwas nach hinten verschieben?',
+        };
     }
 
     /**
