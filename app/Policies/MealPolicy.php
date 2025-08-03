@@ -45,7 +45,7 @@ class MealPolicy
      */
     public function delete(User $user, Meal $meal): bool
     {
-        return false;
+        return $this->view($user, $meal);
     }
 
     /**

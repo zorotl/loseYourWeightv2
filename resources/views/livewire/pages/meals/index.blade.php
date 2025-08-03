@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Meal;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Rule;
@@ -35,6 +36,14 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         // We eager load the 'foods' relationship to count ingredients efficiently.
         $this->meals = auth()->user()->meals()->with('foods')->get();
+    }
+
+    public function deleteMeal(int $mealId): void
+    {
+        $meal = Meal::findOrFail($mealId);
+        $this->authorize('delete', $meal);
+        $meal->delete();
+        $this->loadMeals();
     }
 }; ?>
 
@@ -79,6 +88,9 @@ new #[Layout('components.layouts.app')] class extends Component {
                             <flux:button variant="outline" :href="route('pages.meals.show', ['meal' => $meal])" wire:navigate>
                                 Bearbeiten
                             </flux:button>
+                            <button wire:click="deleteMeal({{ $meal->id }})" wire:confirm="Bist du sicher, dass du diese Mahlzeit löschen willst?" class="ml-2 text-sm text-red-500 hover:text-red-700">
+                                Löschen
+                            </button>
                         </div>
                     </div>
                 </li>
