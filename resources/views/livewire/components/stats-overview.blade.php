@@ -57,5 +57,10 @@ new class extends Component
             <span class="text-4xl font-bold tracking-tight">{{ auth()->user()->target_weight_kg }}</span>
             <span class="text-lg font-medium text-zinc-500">kg</span>
         </div>
+        @if($timeRemaining = auth()->user()->goal_time_remaining)
+            <p class="text-xs text-zinc-500">
+                Geplant zu erreichen: {{ $timeRemaining }}
+            </p>
+        @endif
     </div>
 </div>

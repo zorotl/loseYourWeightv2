@@ -102,6 +102,10 @@ class extends Component
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
+    <div>
+        <a href="{{ route('pages.meals.index') }}" wire:navigate class="text-sm text-indigo-600 hover:underline">&larr; Zurück zur Übersicht</a>
+    </div>
+
     <div class="flex flex-col gap-1.5">
         <h1 class="text-2xl font-bold tracking-tight">
             Mahlzeit bearbeiten: <span class="text-indigo-600">{{ $meal->name }}</span>

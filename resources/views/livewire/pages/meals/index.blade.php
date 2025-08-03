@@ -34,7 +34,7 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function loadMeals(): void
     {
         // We eager load the 'foods' relationship to count ingredients efficiently.
-        $this->meals = auth()->user()->meals()->withCount('foods')->get();
+        $this->meals = auth()->user()->meals()->with('foods')->get();
     }
 }; ?>
 
@@ -72,7 +72,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $meal->name }}
                             </p>
-                            <p class="truncate text-sm text-gray-500">{{ $meal->foods_count }} Zutaten - Total X kcal
+                            <p class="truncate text-sm text-gray-500">{{ $meal->foods_count }} Zutaten - Total {{ $meal->total_calories }} kcal
                             </p>
                         </div>
                         <div>

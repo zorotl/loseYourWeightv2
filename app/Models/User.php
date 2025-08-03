@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -209,5 +210,18 @@ class User extends Authenticatable
     public function meals()
     {
         return $this->hasMany(Meal::class);
+    }
+
+    /**
+     * Lädt die verbleibende Zeit bis zum Zieldatum.
+     * Gibt null zurück, wenn das Zieldatum in der Vergangenheit liegt oder nicht gesetzt ist.
+     */
+    public function getGoalTimeRemainingAttribute(): ?string
+    {
+        if (!$this->target_date || $this->target_date->isPast()) {
+            return null;
+        }
+
+        return 'in ' . now()->diffForHumans($this->target_date, CarbonInterface::DIFF_ABSOLUTE);
     }
 }
