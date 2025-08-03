@@ -23,17 +23,10 @@
             {{ $slot }}
         </main>
 
-        {{-- Simple Footer --}}
-        <footer class="bg-gray-50 py-8 dark:bg-zinc-800">
-            <div class="container mx-auto px-4 text-center text-sm text-gray-500">
-                <div class="flex justify-center space-x-6">
-                    <a href="{{ route('terms') }}" wire:navigate class="hover:underline">AGB</a>
-                    <a href="{{ route('privacy') }}" wire:navigate class="hover:underline">Datenschutz</a>
-                    <a href="{{ route('imprint') }}" wire:navigate class="hover:underline">Impressum</a>
-                </div>
-                <p class="mt-4">&copy; {{ date('Y') }} {{ config('app.name') }}. Alle Rechte vorbehalten. Weil wir das so sagen.</p>
-            </div>
+        <footer class="bg-white py-8 dark:bg-zinc-800">
+            @include('partials.footer')
         </footer>
+        
         @fluxScripts
     </body>
 </html>

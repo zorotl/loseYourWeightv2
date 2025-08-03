@@ -30,17 +30,7 @@
                 </flux:navlist>
             @endcan
 
-            <flux:spacer />
-
-            <flux:navlist variant="outline">                
-                <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                {{ __('Repository') }}
-                </flux:navlist.item>
-
-                <flux:navlist.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                {{ __('Documentation') }}
-                </flux:navlist.item>
-            </flux:navlist>
+            <flux:spacer />        
 
             <!-- Desktop User Menu -->
             <flux:dropdown class="hidden lg:block" position="bottom" align="start">
@@ -206,10 +196,17 @@
             </flux:dropdown>
         </flux:header>
 
-        {{ $slot }}
+        <flux:main class="flex flex-col min-h-screen">
+            <div class="flex-1">
+                {{ $slot }}
+            </div>
+
+            <footer class="bg-white py-8 dark:bg-zinc-800 mt-auto">
+                @include('partials.footer')
+            </footer>
+        </flux:main>
 
         @fluxScripts
-
         <x-toast />
     </body>
 </html>

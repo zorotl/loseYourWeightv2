@@ -40,25 +40,25 @@ new class extends Component {
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+    <x-settings.layout :heading="__('Passwort aktualisieren')" :subheading="__('Sorge dafür, dass dein Konto ein sicheres, langes Passwort verwendet')">
         <form wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
                 wire:model="current_password"
-                :label="__('Current password')"
+                :label="__('Aktuelles Passwort')"
                 type="password"
                 required
                 autocomplete="current-password"
             />
             <flux:input
                 wire:model="password"
-                :label="__('New password')"
+                :label="__('Neues Passwort')"
                 type="password"
                 required
                 autocomplete="new-password"
             />
             <flux:input
                 wire:model="password_confirmation"
-                :label="__('Confirm Password')"
+                :label="__('Passwort bestätigen')"
                 type="password"
                 required
                 autocomplete="new-password"
@@ -66,11 +66,11 @@ new class extends Component {
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full">{{ __('Save') }}</flux:button>
+                    <flux:button variant="primary" type="submit" class="w-full">{{ __('Speichern') }}</flux:button>
                 </div>
 
                 <x-action-message class="me-3" on="password-updated">
-                    {{ __('Saved.') }}
+                    {{ __('Gespeichert.') }}
                 </x-action-message>
             </div>
         </form>
