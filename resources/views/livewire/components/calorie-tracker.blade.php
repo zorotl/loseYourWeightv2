@@ -5,6 +5,7 @@ use App\Models\FoodLogEntry;
 use App\Models\Meal;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\ConnectionException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Rule;
 use Livewire\Volt\Component;
@@ -47,17 +48,20 @@ new class extends Component
             $this->selectedFood = null;
             return;
         }
-        $response = Http::get('https://world.openfoodfacts.org/cgi/search.pl', [
-            'search_terms' => $value,
-            'search_simple' => 1,
-            'action' => 'process',
-            'json' => 1,
-            'page_size' => 10,
-        ]);
-        if ($response->ok()) {
-            $this->searchResults = $response->json()['products'] ?? [];
-        } else {
+
+        try {
+            $response = Http::timeout(4)->get('https://world.openfoodfacts.org/cgi/search.pl', [
+                'search_terms' => $value, 'search_simple' => 1, 'action' => 'process', 'json' => 1, 'page_size' => 10,
+            ]);
+            
+            if ($response->ok()) {
+                $this->searchResults = $response->json()['products'] ?? [];
+            } else {
+                $this->searchResults = [];
+            }
+        } catch (ConnectionException $e) {
             $this->searchResults = [];
+            $this->dispatch('show-toast', message: 'Die Lebensmittel-API ist nicht erreichbar.', type: 'error');
         }
     }
 
@@ -65,8 +69,13 @@ new class extends Component
     {
         $productData = collect($this->searchResults)->firstWhere('code', $productCode);
         if (!$productData) return;
+
         $calories = data_get($productData, 'nutriments.energy-kcal_100g');
-        if (!$calories) return;
+        if (!$calories) {
+            $this->dispatch('show-toast', message: 'Dieses Produkt hat keine Kalorienangaben.', type: 'error');
+            return;
+        }
+
         $this->selectedFood = [
             'source' => 'openfoodfacts',
             'source_id' => $productData['code'],
@@ -74,6 +83,7 @@ new class extends Component
             'brand' => data_get($productData, 'brands', 'Unknown'),
             'calories' => (int) $calories,
         ];
+        
         $this->searchResults = [];
         $this->search = $this->selectedFood['name'];
     }
