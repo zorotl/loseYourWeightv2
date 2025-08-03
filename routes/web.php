@@ -4,9 +4,15 @@ use Livewire\Volt\Volt;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\EnsureProfileIsComplete;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+// Route::get('/', function () {
+//     return view('welcome');
+// })->name('home');
+
+// PUBLIC PAGES
+Route::view('/', 'welcome')->name('home');
+Route::view('/terms', 'pages.terms')->name('terms');
+Route::view('/privacy', 'pages.privacy')->name('privacy');
+Route::view('/imprint', 'pages.imprint')->name('imprint');
 
 Route::middleware(['auth', 'verified', EnsureProfileIsComplete::class])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
