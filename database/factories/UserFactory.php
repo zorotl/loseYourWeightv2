@@ -29,6 +29,14 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+
+            // Unsere neuen Felder mit realistischen Werten
+            'height_cm' => fake()->numberBetween(150, 200),
+            'date_of_birth' => fake()->dateTimeBetween('-50 years', '-18 years'),
+            'gender' => fake()->randomElement(['male', 'female']),
+            'activity_level' => fake()->numberBetween(1, 5),
+            'target_weight_kg' => fake()->randomFloat(1, 60, 90),
+            'target_date' => fake()->dateTimeBetween('+1 month', '+1 year'),
         ];
     }
 
@@ -37,7 +45,7 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'email_verified_at' => null,
         ]);
     }
