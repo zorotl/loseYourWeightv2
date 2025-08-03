@@ -2,9 +2,6 @@
 
 use App\Models\User;
 use App\Models\WeightHistory;
-use Tests\TestCase;
-
-uses(TestCase::class);
 
 test('it correctly calculates total daily energy expenditure (tdee)', function () {
     // 1. Arrange
