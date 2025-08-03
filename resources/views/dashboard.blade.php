@@ -6,11 +6,6 @@
 
     {{-- Stats Overview --}}
     <livewire:components.stats-overview />
-
-    {{-- Weight Chart --}}
-    <div class="mt-4">
-        <livewire:components.weight-chart />
-    </div>
     
     {{-- Calorie Tracker --}}
     <div class="mt-4">

@@ -14,6 +14,7 @@ Route::middleware(['auth', 'verified', EnsureProfileIsComplete::class])->group(f
 
     Volt::route('meals', 'pages.meals.index')->name('pages.meals.index');
     Volt::route('meals/{meal}', 'pages.meals.show')->name('pages.meals.show');
+    Volt::route('statistics', 'pages.statistics.index')->name('statistics.index');
 });
 
 Route::middleware(['auth'])->group(function () {
