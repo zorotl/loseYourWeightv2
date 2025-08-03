@@ -15,7 +15,8 @@
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     <flux:navlist.item icon="rocket-launch" :href="route('pages.meals.index')" :current="request()->routeIs('pages.meals.index')" wire:navigate>{{ __('Mahlzeiten') }}</flux:navlist.item>
-                    <flux:navlist.item icon="user" :href="route('settings.profile')" :current="request()->routeIs('settings.profile')" wire:navigate>{{ __('Profile') }}</flux:navlist.item>
+                    <flux:navlist.item icon="user-circle" :href="route('pages.setup')" :current="request()->routeIs('pages.setup')" wire:navigate>{{ __('Persönliche Ziele') }}</flux:navlist.item>
+                    <flux:navlist.item icon="user" :href="route('settings.profile')" :current="request()->routeIs('settings.profile')" wire:navigate>{{ __('Einstellungen') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
@@ -130,7 +131,7 @@
         {{ $slot }}
 
         @fluxScripts
-        
+
         <x-toast />
     </body>
 </html>
