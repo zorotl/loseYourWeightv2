@@ -16,19 +16,23 @@ new class extends Component
     public Collection $todaysEntries;
 
     // State properties
-    public string $activeTab = 'food'; // 'food', 'meal', or 'favorites'
+    public string $activeTab = 'food'; // 'food', 'favorites', or 'meal'
 
     // Food Search properties
     public string $search = '';
     public array $searchResults = [];
     public ?array $selectedFood = null;
+
+    // Quantity properties
     #[Rule('required|integer|min:1|max:5000')]
-    public int|string $quantity = '';
+    public int|string $quantity = ''; // Used for single food/manual entry
+    
+    public array $favoriteQuantities = []; // Separate quantities for the favorites list
 
     // Meal Search properties
     public string $mealSearch = '';
     public ?Collection $mealSearchResults = null;
-    
+
     // Favorites properties
     public ?Collection $favoriteFoods = null;
     public array $favoriteFoodIds = [];
@@ -63,19 +67,23 @@ new class extends Component
 
     public function logFavorite(int $foodId): void
     {
-        $this->validateOnly('quantity');
+        // Validate the specific quantity from the array
+        $this->validate(['favoriteQuantities.'.$foodId => 'required|integer|min:1|max:5000']);
         $food = Food::find($foodId);
         if (!$food) return;
 
+        $quantityToLog = $this->favoriteQuantities[$foodId];
+
         auth()->user()->foodLogEntries()->create([
             'food_id' => $food->id,
-            'quantity_grams' => $this->quantity,
-            'calories' => round(($food->calories / 100) * $this->quantity),
+            'quantity_grams' => $quantityToLog,
+            'calories' => round(($food->calories / 100) * $quantityToLog),
             'consumed_at' => now(),
         ]);
 
-        $this->reset('quantity');
+        unset($this->favoriteQuantities[$foodId]);
         $this->loadEntries();
+        $this->dispatch('show-toast', message: "'{$food->name}' hinzugefügt.");
     }
 
     public function updatedSearch(string $value): void
@@ -85,12 +93,10 @@ new class extends Component
             $this->selectedFood = null;
             return;
         }
-
         try {
             $response = Http::timeout(4)->get('https://world.openfoodfacts.org/cgi/search.pl', [
                 'search_terms' => $value, 'search_simple' => 1, 'action' => 'process', 'json' => 1, 'page_size' => 10,
             ]);
-            
             if ($response->ok()) {
                 $this->searchResults = $response->json()['products'] ?? [];
             } else {
@@ -106,13 +112,11 @@ new class extends Component
     {
         $productData = collect($this->searchResults)->firstWhere('code', $productCode);
         if (!$productData) return;
-
         $calories = data_get($productData, 'nutriments.energy-kcal_100g');
         if (!$calories) {
             $this->dispatch('show-toast', message: 'Dieses Produkt hat keine Kalorienangaben.', type: 'error');
             return;
         }
-
         $this->selectedFood = [
             'source' => 'openfoodfacts',
             'source_id' => $productData['code'],
@@ -120,7 +124,6 @@ new class extends Component
             'brand' => data_get($productData, 'brands', 'Unknown'),
             'calories' => (int) $calories,
         ];
-        
         $this->searchResults = [];
         $this->search = $this->selectedFood['name'];
     }
@@ -266,7 +269,8 @@ new class extends Component
         </div>
 
         <div x-show="$wire.activeTab === 'food'" x-cloak class="mt-4">
-            <div class="relative">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Lebensmittel über die Online-Suche hinzufügen</h3>
+            <div class="relative mt-4">
                 <flux:input wire:model.live.debounce.500ms="search" :label="__('Lebensmittel suchen...')" placeholder="z.B. Cola Zero" />
                 @if(!empty($searchResults))
                     <div class="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
@@ -281,7 +285,6 @@ new class extends Component
                     </div>
                 @endif
             </div>
-
             @if($selectedFood)
                 <form wire:submit="logSelectedFood" class="mt-4 flex items-end gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
                     <div class="flex-1">
@@ -296,13 +299,11 @@ new class extends Component
                     </div>
                 </form>
             @endif
-            
             <div class="mt-4 text-center">
                 <button wire:click="$toggle('showManualForm')" class="text-sm text-indigo-600 hover:underline">
                     {{ $showManualForm ? 'Suche verwenden' : 'Produkt nicht gefunden? Manuell eintragen.' }}
                 </button>
             </div>
-
             @if($showManualForm)
                 <form wire:submit="logManualFood" class="mt-4 flex items-end gap-4 rounded-lg border border-dashed border-gray-400 p-4">
                     <div class="flex-1">
@@ -322,53 +323,62 @@ new class extends Component
         </div>
         
         <div x-show="$wire.activeTab === 'favorites'" x-cloak class="mt-4">
-            @forelse($favoriteFoods as $food)
-                <form wire:submit.prevent="logFavorite({{ $food->id }})" class="flex items-end gap-4 rounded-lg p-2 even:bg-gray-50 dark:even:bg-gray-900/50">
-                    <div class="flex-1">
-                        <p class="font-semibold text-gray-900 dark:text-white">{{ $food->name }}</p>
-                        <p class="text-xs text-gray-500">{{ $food->calories }} kcal / 100g</p>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Aus deinen Favoriten hinzufügen</h3>
+            <div class="mt-4 space-y-2">
+                @forelse($favoriteFoods as $food)
+                    <div wire:key="fav-{{ $food->id }}">
+                        <form wire:submit.prevent="logFavorite({{ $food->id }})" class="flex items-end gap-4 rounded-lg p-2 even:bg-gray-50 dark:even:bg-gray-900/50">
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-900 dark:text-white">{{ $food->name }}</p>
+                                <p class="text-xs text-gray-500">{{ $food->calories }} kcal / 100g</p>
+                            </div>
+                            <div class="w-32">
+                                <flux:input wire:model="favoriteQuantities.{{ $food->id }}" :label="__('Menge (g)')" type="number" required />
+                            </div>
+                            <div>
+                                <flux:button type="submit" variant="primary">{{ __('Hinzufügen') }}</flux:button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="w-32">
-                        <flux:input wire:model="quantity" :label="__('Menge (g)')" type="number" required />
-                    </div>
-                    <div>
-                        <flux:button type="submit" variant="primary">{{ __('Hinzufügen') }}</flux:button>
-                    </div>
-                </form>
-            @empty
-                <p class="py-4 text-center text-sm text-gray-500">Du hast noch keine Favoriten. Füge sie aus deiner Tagesliste hinzu.</p>
-            @endforelse
+                @empty
+                    <p class="py-4 text-center text-sm text-gray-500">Du hast noch keine Favoriten. Füge sie aus deiner Tagesliste hinzu.</p>
+                @endforelse
+            </div>
         </div>
 
         <div x-show="$wire.activeTab === 'meal'" x-cloak class="mt-4">
-            <flux:input wire:model.live.debounce.300ms="mealSearch" :label="__('Mahlzeit suchen...')" />
-            <div class="mt-4 flow-root">
-                <ul role="list" class="-my-5 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($mealSearchResults as $meal)
-                        <li class="py-4" wire:key="meal-{{ $meal->id }}">
-                            <div class="flex items-center space-x-4">
-                                <div class="min-w-0 flex-1">
-                                    <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $meal->name }}</p>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Gespeicherte Mahlzeiten hinzufügen</h3>
+            <div class="mt-4">
+                <flux:input wire:model.live.debounce.300ms="mealSearch" :label="__('Mahlzeit suchen...')" />
+                <div class="mt-4 flow-root">
+                    <ul role="list" class="-my-5 divide-y divide-gray-200 dark:divide-gray-700">
+                        @forelse($mealSearchResults as $meal)
+                            <li class="py-4" wire:key="meal-{{ $meal->id }}">
+                                <div class="flex items-center space-x-4">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $meal->name }}</p>
+                                    </div>
+                                    <div>
+                                       <flux:button wire:click="logMeal({{ $meal->id }})" variant="primary">
+                                            Hinzufügen
+                                       </flux:button>
+                                    </div>
                                 </div>
-                                <div>
-                                   <flux:button wire:click="logMeal({{ $meal->id }})" variant="primary">
-                                        Hinzufügen
-                                   </flux:button>
-                                </div>
-                            </div>
-                        </li>
-                    @empty
-                        <li class="py-4 text-center text-sm text-gray-500">
-                            Keine Mahlzeiten gefunden. <a href="{{ route('pages.meals.index') }}" class="text-indigo-600 hover:underline" wire:navigate>Zeit, welche zu erstellen.</a>
-                        </li>
-                    @endforelse
-                </ul>
+                            </li>
+                        @empty
+                            <li class="py-4 text-center text-sm text-gray-500">
+                                Keine Mahlzeiten gefunden. <a href="{{ route('pages.meals.index') }}" class="text-indigo-600 hover:underline" wire:navigate>Zeit, welche zu erstellen.</a>
+                            </li>
+                        @endforelse
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="mt-6 flow-root border-t border-gray-200 pt-6 dark:border-gray-700">
-        <ul role="list" class="-my-5 divide-y divide-gray-200 dark:divide-gray-700">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Heutige Einträge</h3>
+        <ul role="list" class="mt-4 -my-5 divide-y divide-gray-200 dark:divide-gray-700">
             @forelse($todaysEntries as $entry)
                 <li class="py-4" wire:key="entry-{{ $entry->id }}">
                     <div class="flex items-center space-x-2">
