@@ -4,6 +4,7 @@ use App\Models\Food;
 use App\Models\FoodLogEntry;
 use App\Models\Meal;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\ConnectionException;
 use Livewire\Attributes\Computed;
@@ -15,7 +16,7 @@ new class extends Component
     public Collection $todaysEntries;
 
     // State properties
-    public string $activeTab = 'food'; // 'food' or 'meal'
+    public string $activeTab = 'food'; // 'food', 'meal', or 'favorites'
 
     // Food Search properties
     public string $search = '';
@@ -27,6 +28,10 @@ new class extends Component
     // Meal Search properties
     public string $mealSearch = '';
     public ?Collection $mealSearchResults = null;
+    
+    // Favorites properties
+    public ?Collection $favoriteFoods = null;
+    public array $favoriteFoodIds = [];
 
     // Manual entry properties
     #[Rule('required|string|max:100')]
@@ -39,6 +44,38 @@ new class extends Component
     {
         $this->loadEntries();
         $this->mealSearchResults = auth()->user()->meals;
+        $this->loadFavorites();
+    }
+    
+    protected function loadFavorites(): void
+    {
+        $user = Auth::user();
+        $this->favoriteFoods = $user->favoriteFoods()->get();
+        $this->favoriteFoodIds = $this->favoriteFoods->pluck('id')->toArray();
+    }
+
+    public function toggleFavorite(int $foodId): void
+    {
+        auth()->user()->favoriteFoods()->toggle($foodId);
+        $this->loadFavorites();
+        $this->dispatch('show-toast', message: 'Favoriten aktualisiert.');
+    }
+
+    public function logFavorite(int $foodId): void
+    {
+        $this->validateOnly('quantity');
+        $food = Food::find($foodId);
+        if (!$food) return;
+
+        auth()->user()->foodLogEntries()->create([
+            'food_id' => $food->id,
+            'quantity_grams' => $this->quantity,
+            'calories' => round(($food->calories / 100) * $this->quantity),
+            'consumed_at' => now(),
+        ]);
+
+        $this->reset('quantity');
+        $this->loadEntries();
     }
 
     public function updatedSearch(string $value): void
@@ -216,11 +253,14 @@ new class extends Component
     <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
         <div class="border-b border-gray-200 dark:border-gray-700">
             <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <button wire:click="$set('activeTab', 'food')" class="{{ $activeTab === 'food' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
-                    Lebensmittel suchen
+                <button wire:click="$set('activeTab', 'food')" class="{{ $activeTab === 'food' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:border-gray-300' }} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+                    Lebensmittel
                 </button>
-                <button wire:click="$set('activeTab', 'meal')" class="{{ $activeTab === 'meal' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
-                    Meine Mahlzeiten
+                <button wire:click="$set('activeTab', 'favorites')" class="{{ $activeTab === 'favorites' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:border-gray-300' }} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+                    Favoriten
+                </button>
+                <button wire:click="$set('activeTab', 'meal')" class="{{ $activeTab === 'meal' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:border-gray-300' }} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium">
+                    Mahlzeiten
                 </button>
             </nav>
         </div>
@@ -280,6 +320,25 @@ new class extends Component
                 </form>
             @endif
         </div>
+        
+        <div x-show="$wire.activeTab === 'favorites'" x-cloak class="mt-4">
+            @forelse($favoriteFoods as $food)
+                <form wire:submit.prevent="logFavorite({{ $food->id }})" class="flex items-end gap-4 rounded-lg p-2 even:bg-gray-50 dark:even:bg-gray-900/50">
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-900 dark:text-white">{{ $food->name }}</p>
+                        <p class="text-xs text-gray-500">{{ $food->calories }} kcal / 100g</p>
+                    </div>
+                    <div class="w-32">
+                        <flux:input wire:model="quantity" :label="__('Menge (g)')" type="number" required />
+                    </div>
+                    <div>
+                        <flux:button type="submit" variant="primary">{{ __('Hinzufügen') }}</flux:button>
+                    </div>
+                </form>
+            @empty
+                <p class="py-4 text-center text-sm text-gray-500">Du hast noch keine Favoriten. Füge sie aus deiner Tagesliste hinzu.</p>
+            @endforelse
+        </div>
 
         <div x-show="$wire.activeTab === 'meal'" x-cloak class="mt-4">
             <flux:input wire:model.live.debounce.300ms="mealSearch" :label="__('Mahlzeit suchen...')" />
@@ -312,7 +371,12 @@ new class extends Component
         <ul role="list" class="-my-5 divide-y divide-gray-200 dark:divide-gray-700">
             @forelse($todaysEntries as $entry)
                 <li class="py-4" wire:key="entry-{{ $entry->id }}">
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <button wire:click="toggleFavorite({{ $entry->food->id }})">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-6 w-6 {{ in_array($entry->food->id, $this->favoriteFoodIds) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300' }} transition-colors duration-200 hover:text-yellow-400">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-3.152a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                            </svg>
+                        </button>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $entry->food->name }}</p>
                             <p class="truncate text-sm text-gray-500">{{ $entry->quantity_grams }}g - {{ $entry->consumed_at->format('H:i') }} Uhr</p>

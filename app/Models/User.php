@@ -269,4 +269,9 @@ class User extends Authenticatable
 
         return 'in ' . now()->diffForHumans($this->target_date, CarbonInterface::DIFF_ABSOLUTE);
     }
+
+    public function favoriteFoods()
+    {
+        return $this->belongsToMany(Food::class, 'food_user_favorites');
+    }
 }

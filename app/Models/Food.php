@@ -52,4 +52,9 @@ class Food extends Model
         return $this->belongsToMany(Meal::class)
             ->withPivot('quantity_grams');
     }
+
+    public function favoritedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'food_user_favorites');
+    }
 }
