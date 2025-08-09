@@ -6,15 +6,13 @@
 
             <h2 class="mt-8 mb-4 text-lg font-semibold">Verantwortlich für den Inhalt:</h2>
             <p>
-                [Dein Name / Firmenname]<br>
-                [Deine Strasse und Hausnummer]<br>
-                [PLZ und Ort]<br>
+                Martin Striednig<br>
                 Schweiz
             </p>
 
             <h2 class="mt-8 mb-4 text-lg font-semibold">Kontakt:</h2>
             <p>
-                E-Mail: [Deine Kontakt-E-Mail]
+                E-Mail: info@lose-your-weight.ch
             </p>
 
             <h2 class="mt-8 mb-4 text-lg font-semibold">Haftungsausschluss</h2>
