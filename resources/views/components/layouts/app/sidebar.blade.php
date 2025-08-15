@@ -207,6 +207,7 @@
             </footer>
         </flux:main>
 
+        @include('cookie-consent::index')
         @fluxScripts
         <x-toast />
     </body>
