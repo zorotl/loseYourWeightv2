@@ -23,7 +23,7 @@ Route::middleware(['auth', 'verified', EnsureProfileIsComplete::class])->group(f
     Volt::route('statistics', 'pages.statistics.index')->name('statistics.index');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
