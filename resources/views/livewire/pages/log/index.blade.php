@@ -18,33 +18,48 @@ class extends Component
     public function previousDay(): void
     {
         $newDate = Carbon::parse($this->date)->subDay()->toDateString();
-        // Führe eine Navigation zur neuen URL durch, anstatt nur die Eigenschaft zu ändern
         $this->redirect(route('log.index', ['date' => $newDate]), navigate: true);
     }
 
     public function nextDay(): void
     {
         $newDate = Carbon::parse($this->date)->addDay()->toDateString();
-        // Führe eine Navigation zur neuen URL durch
         $this->redirect(route('log.index', ['date' => $newDate]), navigate: true);
     }
 
-    public function getFormattedDateProperty(): string
+    public function jumpToDate(string $newDate): void
     {
-        $carbonDate = Carbon::parse($this->date);
-        if ($carbonDate->isToday()) return 'Heute (' . $carbonDate->translatedFormat('d. F Y') . ')';
-        if ($carbonDate->isYesterday()) return 'Gestern (' . $carbonDate->translatedFormat('d. F Y') . ')';
-        return $carbonDate->translatedFormat('d. F Y');
+        // Kommt vom Kalender im Format Y-m-d
+        $this->redirect(route('log.index', ['date' => $newDate]), navigate: true);
     }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
     {{-- Date Navigation --}}
-    <div class="flex items-center justify-between">
+    <div 
+        class="flex items-center justify-between"
+        x-data
+        x-init="
+            flatpickr($refs.dateInput, {
+                dateFormat: 'Y-m-d',
+                defaultDate: '{{ $date }}',
+                altInput: true,
+                altFormat: 'l, d. F Y',
+                locale: 'de',
+                onChange: (selectedDates, dateStr, instance) => {
+                    $wire.jumpToDate(dateStr);
+                }
+            });
+        " {{-- <-- Das fehlerhafte " wurde hier entfernt --}}
+    >
         <flux:button wire:click="previousDay" variant="outline">&larr; Vorheriger Tag</flux:button>
-        <h1 class="text-xl font-bold tracking-tight text-center">
-            {{ $this->formattedDate }}
-        </h1>
+        
+        <input 
+            x-ref="dateInput" 
+            type="text" 
+            class="cursor-pointer border-none bg-transparent text-center text-xl font-bold tracking-tight text-gray-900 focus:ring-0 dark:text-white"
+        >
+        
         <flux:button wire:click="nextDay" variant="outline" :disabled="\Carbon\Carbon::parse($date)->isToday()">Nächster Tag &rarr;</flux:button>
     </div>
     
