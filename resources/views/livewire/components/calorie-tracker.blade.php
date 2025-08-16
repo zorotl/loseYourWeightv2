@@ -22,18 +22,21 @@ new class extends Component
     public string $search = '';
     public array $searchResults = [];
     public ?array $selectedFood = null;
-
+    
     // Quantity properties
     #[Rule('required|integer|min:1|max:5000')]
     public int|string $quantity = ''; // Used for single food/manual entry
     
+    #[Rule('required|array')]
+    #[Rule('favoriteQuantities.*', 'required|integer|min:1|max:5000')]
     public array $favoriteQuantities = []; // Separate quantities for the favorites list
 
     // Meal Search properties
     public string $mealSearch = '';
     public ?Collection $mealSearchResults = null;
-
+    
     // Favorites properties
+    public string $favoriteSearch = '';
     public ?Collection $favoriteFoods = null;
     public array $favoriteFoodIds = [];
 
@@ -54,8 +57,17 @@ new class extends Component
     protected function loadFavorites(): void
     {
         $user = Auth::user();
-        $this->favoriteFoods = $user->favoriteFoods()->get();
-        $this->favoriteFoodIds = $this->favoriteFoods->pluck('id')->toArray();
+        $this->favoriteFoods = $user->favoriteFoods()
+            ->when($this->favoriteSearch, function ($query) {
+                $query->where('name', 'like', '%' . $this->favoriteSearch . '%');
+            })
+            ->get();
+        $this->favoriteFoodIds = $user->favoriteFoods()->pluck('food_id')->toArray();
+    }
+
+    public function updatedFavoriteSearch(): void
+    {
+        $this->loadFavorites();
     }
 
     public function toggleFavorite(int $foodId): void
@@ -67,7 +79,6 @@ new class extends Component
 
     public function logFavorite(int $foodId): void
     {
-        // Validate the specific quantity from the array
         $this->validate(['favoriteQuantities.'.$foodId => 'required|integer|min:1|max:5000']);
         $food = Food::find($foodId);
         if (!$food) return;
@@ -286,7 +297,7 @@ new class extends Component
                 @endif
             </div>
             @if($selectedFood)
-                <form wire:submit="logSelectedFood" class="mt-4 flex items-end gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
+                <form wire:submit.prevent="logSelectedFood" class="mt-4 flex items-end gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
                     <div class="flex-1">
                         <p class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ausgewähltes Lebensmittel</p>
                         <p class="font-semibold text-gray-900 dark:text-white">{{ $selectedFood['name'] }} ({{ $selectedFood['calories'] }} kcal/100g)</p>
@@ -305,7 +316,7 @@ new class extends Component
                 </button>
             </div>
             @if($showManualForm)
-                <form wire:submit="logManualFood" class="mt-4 flex items-end gap-4 rounded-lg border border-dashed border-gray-400 p-4">
+                <form wire:submit.prevent="logManualFood" class="mt-4 flex items-end gap-4 rounded-lg border border-dashed border-gray-400 p-4">
                     <div class="flex-1">
                         <flux:input wire:model="manualFoodName" :label="__('Lebensmittel')" required />
                     </div>
@@ -324,6 +335,9 @@ new class extends Component
         
         <div x-show="$wire.activeTab === 'favorites'" x-cloak class="mt-4">
             <h3 class="text-base font-semibold text-gray-900 dark:text-white">Aus deinen Favoriten hinzufügen</h3>
+            <div class="mt-4">
+                <flux:input wire:model.live.debounce.300ms="favoriteSearch" placeholder="Favoriten durchsuchen..." />
+            </div>
             <div class="mt-4 space-y-2">
                 @forelse($favoriteFoods as $food)
                     <div wire:key="fav-{{ $food->id }}">
