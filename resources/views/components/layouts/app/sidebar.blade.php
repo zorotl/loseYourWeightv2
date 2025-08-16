@@ -15,6 +15,7 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                    <flux:navlist.item icon="clipboard-document-list" :href="route('log.index')" :current="request()->routeIs('log.index')" wire:navigate>{{ __('Tagesprotokoll') }}</flux:navlist.item>
                     <flux:navlist.item icon="rocket-launch" :href="route('pages.meals.index')" :current="request()->routeIs('pages.meals.index')" wire:navigate>{{ __('Mahlzeiten') }}</flux:navlist.item>
                     <flux:navlist.item icon="star" :href="route('favorites.index')" :current="request()->routeIs('favorites.index')" wire:navigate>{{ __('Favoriten') }}</flux:navlist.item>
                     <flux:navlist.item icon="user-circle" :href="route('pages.setup')" :current="request()->routeIs('pages.setup')" wire:navigate>{{ __('Mein Profil') }}</flux:navlist.item>                   

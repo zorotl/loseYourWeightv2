@@ -3,6 +3,7 @@
 use App\Models\Food;
 use App\Models\FoodLogEntry;
 use App\Models\Meal;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -14,27 +15,25 @@ use Livewire\Volt\Component;
 new class extends Component
 {
     public Collection $todaysEntries;
+    public string $date;
 
     // State properties
-    public string $activeTab = 'food'; // 'food', 'favorites', or 'meal'
+    public string $activeTab = 'food';
 
     // Food Search properties
     public string $search = '';
     public array $searchResults = [];
     public ?array $selectedFood = null;
-    
+
     // Quantity properties
     #[Rule('required|integer|min:1|max:5000')]
-    public int|string $quantity = ''; // Used for single food/manual entry
-    
-    #[Rule('required|array')]
-    #[Rule('favoriteQuantities.*', 'required|integer|min:1|max:5000')]
-    public array $favoriteQuantities = []; // Separate quantities for the favorites list
+    public int|string $quantity = '';
+    public array $favoriteQuantities = [];
 
     // Meal Search properties
     public string $mealSearch = '';
     public ?Collection $mealSearchResults = null;
-    
+
     // Favorites properties
     public string $favoriteSearch = '';
     public ?Collection $favoriteFoods = null;
@@ -47,13 +46,20 @@ new class extends Component
     public int|string $manualCaloriesPer100g = '';
     public bool $showManualForm = false;
 
-    public function mount(): void
+    public function mount($date = null): void
     {
+        $this->date = $date ? Carbon::parse($date)->toDateString() : today()->toDateString();
         $this->loadEntries();
         $this->mealSearchResults = auth()->user()->meals;
         $this->loadFavorites();
     }
-    
+
+    // FIX 1: Diese Methode reagiert auf Datumsänderungen und lädt die Eintragsliste neu.
+    public function updatedDate($value)
+    {
+        $this->loadEntries();
+    }
+
     protected function loadFavorites(): void
     {
         $user = Auth::user();
@@ -79,7 +85,7 @@ new class extends Component
 
     public function logFavorite(int $foodId): void
     {
-        $this->validate(['favoriteQuantities.'.$foodId => 'required|integer|min:1|max:5000']);
+        $this->validate(['favoriteQuantities.' . $foodId => 'required|integer|min:1|max:5000']);
         $food = Food::find($foodId);
         if (!$food) return;
 
@@ -89,7 +95,8 @@ new class extends Component
             'food_id' => $food->id,
             'quantity_grams' => $quantityToLog,
             'calories' => round(($food->calories / 100) * $quantityToLog),
-            'consumed_at' => now(),
+            // FIX 2: Nutzt das ausgewählte Datum mit der aktuellen Uhrzeit
+            'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
 
         unset($this->favoriteQuantities[$foodId]);
@@ -133,7 +140,7 @@ new class extends Component
             'source_id' => $productData['code'],
             'name' => data_get($productData, 'product_name', 'Unknown'),
             'brand' => data_get($productData, 'brands', 'Unknown'),
-            'calories' => (int) $calories,
+            'calories' => (int)$calories,
         ];
         $this->searchResults = [];
         $this->search = $this->selectedFood['name'];
@@ -151,7 +158,8 @@ new class extends Component
             'food_id' => $food->id,
             'quantity_grams' => $this->quantity,
             'calories' => round(($food->calories / 100) * $this->quantity),
-            'consumed_at' => now(),
+            // FIX 2
+            'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
         $this->reset('selectedFood', 'quantity', 'search');
         $this->loadEntries();
@@ -172,7 +180,8 @@ new class extends Component
             'food_id' => $food->id,
             'quantity_grams' => $validated['quantity'],
             'calories' => round(($food->calories / 100) * $validated['quantity']),
-            'consumed_at' => now(),
+            // FIX 2
+            'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
         $this->reset('manualFoodName', 'manualCaloriesPer100g', 'quantity');
         $this->showManualForm = false;
@@ -198,7 +207,8 @@ new class extends Component
                 'food_id' => $food->id,
                 'quantity_grams' => $food->pivot->quantity_grams,
                 'calories' => round(($food->calories / 100) * $food->pivot->quantity_grams),
-                'consumed_at' => now(),
+                // FIX 2
+                'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -223,7 +233,7 @@ new class extends Component
     {
         $this->todaysEntries = FoodLogEntry::with('food')
             ->where('user_id', auth()->id())
-            ->whereDate('consumed_at', today())
+            ->whereDate('consumed_at', $this->date)
             ->orderBy('consumed_at', 'desc')
             ->get();
     }
@@ -246,13 +256,15 @@ new class extends Component
         $target = auth()->user()->target_calories;
         return $target > 0 ? min(100, round(($this->consumedCalories() / $target) * 100)) : 0;
     }
-
 }; ?>
 
-<div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
+<div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800" wire:key="calorie-tracker-{{ $date }}">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Heutige Kalorien</h3>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                {{-- Dieser Titel passt sich jetzt dem Datum an --}}
+                {{ \Carbon\Carbon::parse($date)->isToday() ? 'Heutige Kalorien' : 'Kalorien vom ' . \Carbon\Carbon::parse($date)->translatedFormat('d. F') }}
+            </h3>
             <p class="mt-1 text-sm text-gray-500">
                 Verbraucht: <span class="font-bold">{{ $this->consumedCalories() }}</span> / {{ auth()->user()->target_calories }} kcal
             </p>
@@ -279,8 +291,10 @@ new class extends Component
             </nav>
         </div>
 
-        <div x-show="$wire.activeTab === 'food'" x-cloak class="mt-4">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Lebensmittel über die Online-Suche hinzufügen</h3>
+        <div class="mt-6 flow-root border-t border-gray-200 pt-6 dark:border-gray-700">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                {{ \Carbon\Carbon::parse($date)->isToday() ? 'Heutige Einträge' : 'Einträge vom ' . \Carbon\Carbon::parse($date)->translatedFormat('d. F') }}
+            </h3>
             <div class="relative mt-4">
                 <flux:input wire:model.live.debounce.500ms="search" :label="__('Lebensmittel suchen...')" placeholder="z.B. Cola Zero" />
                 @if(!empty($searchResults))
@@ -391,7 +405,9 @@ new class extends Component
     </div>
 
     <div class="mt-6 flow-root border-t border-gray-200 pt-6 dark:border-gray-700">
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Heutige Einträge</h3>
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+            {{ $date === today()->toDateString() ? 'Heutige Einträge' : 'Einträge vom ' . \Carbon\Carbon::parse($date)->format('d.m.Y') }}
+        </h3>
         <ul role="list" class="mt-4 -my-5 divide-y divide-gray-200 dark:divide-gray-700">
             @forelse($todaysEntries as $entry)
                 <li class="py-4" wire:key="entry-{{ $entry->id }}">
@@ -413,7 +429,7 @@ new class extends Component
                 </li>
             @empty
                 <li class="py-4 text-center text-sm text-gray-500">
-                    Bisher noch nichts erfasst. Bist du im Hungerstreik?
+                    {{ $date === today()->toDateString() ? 'Bisher noch nichts erfasst. Bist du im Hungerstreik?' : 'An diesem Tag wurde nichts erfasst.' }}
                 </li>
             @endforelse
         </ul>

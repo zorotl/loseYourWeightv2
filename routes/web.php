@@ -22,6 +22,7 @@ Route::middleware(['auth', 'verified', EnsureProfileIsComplete::class])->group(f
     Volt::route('meals/{meal}', 'pages.meals.show')->name('pages.meals.show');
     Volt::route('statistics', 'pages.statistics.index')->name('statistics.index');
     Volt::route('favorites', 'pages.favorites.index')->name('favorites.index');
+    Volt::route('log/{date?}', 'pages.log.index')->name('log.index');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
