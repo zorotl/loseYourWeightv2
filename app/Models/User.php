@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use App\Notifications\CustomVerifyEmail;
 use Illuminate\Support\Str;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -274,5 +274,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function favoriteFoods()
     {
         return $this->belongsToMany(Food::class, 'food_user_favorites');
+    }
+
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new CustomVerifyEmail);
     }
 }
