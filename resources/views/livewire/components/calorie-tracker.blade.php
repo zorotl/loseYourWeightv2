@@ -102,6 +102,8 @@ new class extends Component
         unset($this->favoriteQuantities[$foodId]);
         $this->loadEntries();
         $this->dispatch('show-toast', message: "'{$food->name}' hinzugefügt.");
+
+        $this->dispatch('food-logged');
     }
 
     public function updatedSearch(string $value): void
@@ -163,6 +165,8 @@ new class extends Component
         ]);
         $this->reset('selectedFood', 'quantity', 'search');
         $this->loadEntries();
+
+        $this->dispatch('food-logged');
     }
 
     public function logManualFood(): void
@@ -186,6 +190,8 @@ new class extends Component
         $this->reset('manualFoodName', 'manualCaloriesPer100g', 'quantity');
         $this->showManualForm = false;
         $this->loadEntries();
+
+        $this->dispatch('food-logged');
     }
 
     public function updatedMealSearch(string $value): void
@@ -218,6 +224,8 @@ new class extends Component
         }
         $this->loadEntries();
         $this->activeTab = 'food';
+
+        $this->dispatch('food-logged');
     }
 
     public function deleteEntry(int $entryId): void

@@ -70,7 +70,7 @@ class extends Component
 
     {{-- Weekly Overview Component --}}
     <div>
-        <x-weekly-overview />
+        <livewire:components.weekly-overview />
     </div>
     
     {{-- The Calorie Tracker Component --}}

@@ -1,3 +1,18 @@
+<?php
+
+use Livewire\Attributes\On;
+use Livewire\Volt\Component;
+
+new class extends Component
+{
+    // This listener waits for the 'food-logged' event and triggers a re-render.
+    #[On('food-logged')]
+    public function refresh(): void
+    {
+        // Intentionally left blank.
+    }
+}; ?>
+
 @php
     $user = auth()->user();
     $weeklyGoal = $user->weekly_calorie_goal;
@@ -9,7 +24,7 @@
 <div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
     <div class="flex flex-col gap-2">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-            Aktuelle Wochenübersicht ({{ now()->startOfWeek()->format('d.m') }} - {{ now()->endOfWeek()->format('d.m.Y') }})
+            Wochenübersicht ({{ now()->startOfWeek()->format('d.m') }} - {{ now()->endOfWeek()->format('d.m.Y') }})
         </h3>
         <p class="text-sm text-gray-500">
             Verbraucht: <span class="font-bold">{{ $weeklyConsumed }}</span> / {{ $weeklyGoal }} kcal
