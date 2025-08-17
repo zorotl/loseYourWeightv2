@@ -225,6 +225,27 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Calculates the user's total calorie goal for the current week.
+     */
+    public function getWeeklyCalorieGoalAttribute(): int
+    {
+        return ($this->target_calories ?? 0) * 7;
+    }
+
+    /**
+     * Calculates the calories consumed so far in the current week (Mon-Sun).
+     */
+    public function getWeeklyConsumedCaloriesAttribute(): int
+    {
+        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
+
+        return $this->foodLogEntries()
+            ->whereBetween('consumed_at', [$startOfWeek, $endOfWeek])
+            ->sum('calories');
+    }
+
+    /**
      * A user has many weight history records.
      */
     public function weightHistories()
