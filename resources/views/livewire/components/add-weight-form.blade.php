@@ -27,8 +27,8 @@ new class extends Component
 
 <div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800">
     <h3 class="text-lg font-medium text-gray-900 dark:text-white">Neues Gewicht eintragen</h3>
-    <form wire:submit="saveWeight" class="mt-4 flex items-end gap-4">
-        <div class="flex-1">
+    <form wire:submit="saveWeight" class="mt-4 space-y-4">
+        <div>
             <flux:input
                 wire:model="weight_kg"
                 :label="__('Aktuelles Gewicht (kg)')"
@@ -37,8 +37,8 @@ new class extends Component
                 required
             />
         </div>
-        <div>
-            <flux:button type="submit" variant="primary">
+        <div class="pt-2">
+            <flux:button type="submit" variant="primary" class="w-full">
                 {{ __('Speichern') }}
             </flux:button>
         </div>
