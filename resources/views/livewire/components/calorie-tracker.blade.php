@@ -19,10 +19,11 @@ new class extends Component
 
     // State properties
     public string $activeTab = 'food';
+    public bool $apiSearched = false;
 
     // Food Search properties
     public string $search = '';
-    public array $searchResults = [];
+    public Collection|array $searchResults; // Can hold a Collection (local) or array (API)
     public ?array $selectedFood = null;
 
     // Quantity properties
@@ -52,12 +53,98 @@ new class extends Component
         $this->loadEntries();
         $this->mealSearchResults = auth()->user()->meals;
         $this->loadFavorites();
+        $this->searchResults = new Collection();
     }
-
-    // FIX 1: Diese Methode reagiert auf Datumsänderungen und lädt die Eintragsliste neu.
-    public function updatedDate($value)
+    
+    public function updatedDate($value): void
     {
         $this->loadEntries();
+    }
+
+    // REFACTORED: Searches local DB first
+    public function updatedSearch(string $value): void
+    {
+        $this->selectedFood = null;
+        $this->apiSearched = false;
+
+        if (strlen($value) < 3) {
+            $this->searchResults = new Collection();
+            return;
+        }
+
+        $this->searchResults = Food::query()
+            ->where('name', 'like', '%' . $value . '%')
+            ->orWhere('brand', 'like', '%' . $value . '%')
+            ->take(5)
+            ->get();
+    }
+
+    // NEW: Explicitly searches the API
+    public function searchApi(): void
+    {
+        if (strlen($this->search) < 3) return;
+
+        try {
+            $response = Http::timeout(4)->get('https://world.openfoodfacts.org/cgi/search.pl', [
+                'search_terms' => $this->search, 'search_simple' => 1, 'action' => 'process', 'json' => 1, 'page_size' => 10,
+            ]);
+            
+            if ($response->ok()) {
+                $this->searchResults = $response->json()['products'] ?? [];
+                $this->apiSearched = true;
+            } else {
+                $this->searchResults = [];
+            }
+        } catch (ConnectionException $e) {
+            $this->searchResults = [];
+            $this->dispatch('show-toast', message: 'Die Lebensmittel-API ist nicht erreichbar.', type: 'error');
+        }
+    }
+
+    // REFACTORED: Handles both local Models and API arrays
+    public function selectFood($foodData, bool $isApiResult = false): void
+    {
+        $foodDetails = [];
+
+        if ($isApiResult) {
+            $productData = collect($this->searchResults)->firstWhere('code', $foodData);
+            if (!$productData) return;
+
+            $calories = data_get($productData, 'nutriments.energy-kcal_100g');
+            if (!$calories) {
+                $this->dispatch('show-toast', message: 'Dieses Produkt hat keine Kalorienangaben.', type: 'error');
+                return;
+            }
+
+            $foodDetails = [
+                'source' => 'openfoodfacts',
+                'source_id' => $productData['code'],
+                'name' => data_get($productData, 'product_name', 'Unknown'),
+                'brand' => data_get($productData, 'brands', 'Unknown'),
+                'calories' => (int) $calories,
+                'protein' => (float) data_get($productData, 'nutriments.proteins_100g', 0),
+                'carbohydrates' => (float) data_get($productData, 'nutriments.carbohydrates_100g', 0),
+                'fat' => (float) data_get($productData, 'nutriments.fat_100g', 0),
+            ];
+        } else {
+            $food = Food::find($foodData);
+            if (!$food) return;
+
+            $foodDetails = [
+                'source' => $food->source,
+                'source_id' => $food->source_id,
+                'name' => $food->name,
+                'brand' => $food->brand,
+                'calories' => $food->calories,
+                'protein' => $food->protein,
+                'carbohydrates' => $food->carbohydrates,
+                'fat' => $food->fat,
+            ];
+        }
+
+        $this->selectedFood = $foodDetails;
+        $this->searchResults = new Collection();
+        $this->search = $this->selectedFood['name'];
     }
 
     protected function loadFavorites(): void
@@ -85,67 +172,20 @@ new class extends Component
 
     public function logFavorite(int $foodId): void
     {
-        $this->validate(['favoriteQuantities.' . $foodId => 'required|integer|min:1|max:5000']);
+        $this->validate(['favoriteQuantities.'.$foodId => 'required|integer|min:1|max:5000']);
         $food = Food::find($foodId);
         if (!$food) return;
-
         $quantityToLog = $this->favoriteQuantities[$foodId];
-
         auth()->user()->foodLogEntries()->create([
             'food_id' => $food->id,
             'quantity_grams' => $quantityToLog,
             'calories' => round(($food->calories / 100) * $quantityToLog),
-            // FIX 2: Nutzt das ausgewählte Datum mit der aktuellen Uhrzeit
             'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
-
         unset($this->favoriteQuantities[$foodId]);
         $this->loadEntries();
-        $this->dispatch('show-toast', message: "'{$food->name}' hinzugefügt.");
-
         $this->dispatch('food-logged');
-    }
-
-    public function updatedSearch(string $value): void
-    {
-        if (strlen($value) < 3) {
-            $this->searchResults = [];
-            $this->selectedFood = null;
-            return;
-        }
-        try {
-            $response = Http::timeout(4)->get('https://world.openfoodfacts.org/cgi/search.pl', [
-                'search_terms' => $value, 'search_simple' => 1, 'action' => 'process', 'json' => 1, 'page_size' => 10,
-            ]);
-            if ($response->ok()) {
-                $this->searchResults = $response->json()['products'] ?? [];
-            } else {
-                $this->searchResults = [];
-            }
-        } catch (ConnectionException $e) {
-            $this->searchResults = [];
-            $this->dispatch('show-toast', message: 'Die Lebensmittel-API ist nicht erreichbar.', type: 'error');
-        }
-    }
-
-    public function selectFood(string $productCode): void
-    {
-        $productData = collect($this->searchResults)->firstWhere('code', $productCode);
-        if (!$productData) return;
-        $calories = data_get($productData, 'nutriments.energy-kcal_100g');
-        if (!$calories) {
-            $this->dispatch('show-toast', message: 'Dieses Produkt hat keine Kalorienangaben.', type: 'error');
-            return;
-        }
-        $this->selectedFood = [
-            'source' => 'openfoodfacts',
-            'source_id' => $productData['code'],
-            'name' => data_get($productData, 'product_name', 'Unknown'),
-            'brand' => data_get($productData, 'brands', 'Unknown'),
-            'calories' => (int)$calories,
-        ];
-        $this->searchResults = [];
-        $this->search = $this->selectedFood['name'];
+        $this->dispatch('show-toast', message: "'{$food->name}' hinzugefügt.");
     }
 
     public function logSelectedFood(): void
@@ -154,18 +194,23 @@ new class extends Component
         if (!$this->selectedFood) return;
         $food = Food::firstOrCreate(
             ['source' => $this->selectedFood['source'], 'source_id' => $this->selectedFood['source_id']],
-            ['name' => $this->selectedFood['name'], 'brand' => $this->selectedFood['brand'], 'calories' => $this->selectedFood['calories']]
+            [
+                'name' => $this->selectedFood['name'], 
+                'brand' => $this->selectedFood['brand'], 
+                'calories' => $this->selectedFood['calories'],
+                'protein' => $this->selectedFood['protein'],
+                'carbohydrates' => $this->selectedFood['carbohydrates'],
+                'fat' => $this->selectedFood['fat'],
+            ]
         );
         auth()->user()->foodLogEntries()->create([
             'food_id' => $food->id,
             'quantity_grams' => $this->quantity,
             'calories' => round(($food->calories / 100) * $this->quantity),
-            // FIX 2
             'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
         $this->reset('selectedFood', 'quantity', 'search');
         $this->loadEntries();
-
         $this->dispatch('food-logged');
     }
 
@@ -184,13 +229,11 @@ new class extends Component
             'food_id' => $food->id,
             'quantity_grams' => $validated['quantity'],
             'calories' => round(($food->calories / 100) * $validated['quantity']),
-            // FIX 2
             'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
         $this->reset('manualFoodName', 'manualCaloriesPer100g', 'quantity');
         $this->showManualForm = false;
         $this->loadEntries();
-
         $this->dispatch('food-logged');
     }
 
@@ -207,16 +250,17 @@ new class extends Component
         $meal = auth()->user()->meals()->with('foods')->find($mealId);
         if (!$meal) return;
         $logEntries = [];
+        $now = now();
+        $consumedAt = Carbon::parse($this->date)->setTimeFrom($now);
         foreach ($meal->foods as $food) {
             $logEntries[] = [
                 'user_id' => auth()->id(),
                 'food_id' => $food->id,
                 'quantity_grams' => $food->pivot->quantity_grams,
                 'calories' => round(($food->calories / 100) * $food->pivot->quantity_grams),
-                // FIX 2
-                'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'consumed_at' => $consumedAt,
+                'created_at' => $now,
+                'updated_at' => $now,
             ];
         }
         if (!empty($logEntries)) {
@@ -224,7 +268,6 @@ new class extends Component
         }
         $this->loadEntries();
         $this->activeTab = 'food';
-
         $this->dispatch('food-logged');
     }
 
@@ -234,6 +277,7 @@ new class extends Component
         if ($entry) {
             $entry->delete();
             $this->loadEntries();
+            $this->dispatch('food-logged');
         }
     }
 
@@ -251,22 +295,21 @@ new class extends Component
     {
         return $this->todaysEntries->sum('calories');
     }
-
     #[Computed]
     public function remainingCalories(): int
     {
         return auth()->user()->target_calories - $this->consumedCalories();
     }
-
     #[Computed]
     public function caloriesPercentage(): int
     {
         $target = auth()->user()->target_calories;
         return $target > 0 ? min(100, round(($this->consumedCalories() / $target) * 100)) : 0;
     }
+
 }; ?>
 
-<div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800" wire:key="calorie-tracker-{{ $date }}">    
+<div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800" wire:key="calorie-tracker-{{ $date }}">
     <div class="flex flex-col gap-2">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">
             {{ \Carbon\Carbon::parse($date)->isToday() ? 'Heutige Kalorien' : 'Kalorien vom ' . \Carbon\Carbon::parse($date)->translatedFormat('d. F') }}
@@ -274,7 +317,6 @@ new class extends Component
         <p class="text-sm text-gray-500">
             Verbraucht: <span class="font-bold">{{ $this->consumedCalories() }}</span> / {{ auth()->user()->target_calories }} kcal
         </p>
-        {{-- Progress bar moved directly below the text --}}
         <div class="w-full pt-1">
             <div class="h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                 <div class="h-2.5 rounded-full bg-indigo-600" style="width: {{ $this->caloriesPercentage() }}%"></div>
@@ -297,25 +339,51 @@ new class extends Component
             </nav>
         </div>
 
-        <div class="mt-6 flow-root border-t border-gray-200 pt-6 dark:border-gray-700">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                {{ \Carbon\Carbon::parse($date)->isToday() ? 'Heutige Einträge' : 'Einträge vom ' . \Carbon\Carbon::parse($date)->translatedFormat('d. F') }}
-            </h3>
+        <div x-show="$wire.activeTab === 'food'" x-cloak class="mt-4">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Lebensmittel hinzufügen</h3>
             <div class="relative mt-4">
-                <flux:input wire:model.live.debounce.500ms="search" :label="__('Lebensmittel suchen...')" placeholder="z.B. Cola Zero" />
-                @if(!empty($searchResults))
+                <flux:input wire:model.live.debounce.300ms="search" placeholder="Suche zuerst in deiner lokalen Datenbank..." />
+                
+                @if(strlen($search) >= 3 && count($searchResults) > 0)
                     <div class="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
-                        <ul class="max-h-60 overflow-auto rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                            @foreach($searchResults as $product)
-                                <li wire:click="selectFood('{{ $product['code'] }}')" class="relative cursor-pointer select-none py-2 px-4 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
-                                    <span class="block truncate">{{ data_get($product, 'product_name', 'Unbekannt') }}</span>
-                                    <span class="block truncate text-xs text-gray-500">{{ data_get($product, 'brands', 'Unbekannte Marke') }}</span>
-                                </li>
+                        <ul class="max-h-72 divide-y divide-gray-200 dark:divide-gray-700 overflow-auto rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                            @foreach($searchResults as $result)
+                                @if($apiSearched)
+                                    <li wire:click="selectFood('{{ $result['code'] }}', true)" class="relative cursor-pointer select-none py-2 px-4 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+                                        <span class="block truncate">{{ data_get($result, 'product_name', 'Unbekannt') }}</span>
+                                        <span class="block truncate text-xs text-gray-500">{{ data_get($result, 'brands', 'Unbekannte Marke') }}</span>
+                                    </li>
+                                @else
+                                    <li wire:click="selectFood({{ $result->id }}, false)" class="relative cursor-pointer select-none py-2 px-4 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+                                        <div class="flex justify-between">
+                                            <span>
+                                                <span class="block truncate font-medium">{{ $result->name }}</span>
+                                                <span class="block truncate text-xs text-gray-500">{{ $result->brand }}</span>
+                                            </span>
+                                            <span class="text-xs text-green-600">Lokal</span>
+                                        </div>
+                                    </li>
+                                @endif
                             @endforeach
+
+                            @if(!$apiSearched)
+                                <li>
+                                    <button wire:click="searchApi" class="w-full bg-indigo-50 py-3 px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900">
+                                        Nicht gefunden? In der Online-Datenbank suchen...
+                                    </button>
+                                </li>
+                            @endif
                         </ul>
+                    </div>
+                @elseif(strlen($search) >= 3 && !$apiSearched)
+                    <div class="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                        <button wire:click="searchApi" class="w-full py-3 px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900">
+                            Nichts lokales gefunden. Online suchen...
+                        </button>
                     </div>
                 @endif
             </div>
+
             @if($selectedFood)
                 <form wire:submit.prevent="logSelectedFood" class="mt-4 flex items-end gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
                     <div class="flex-1">
@@ -354,7 +422,7 @@ new class extends Component
         </div>
         
         <div x-show="$wire.activeTab === 'favorites'" x-cloak class="mt-4">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Aus deinen Favoriten hinzufügen</h3>
+             <h3 class="text-base font-semibold text-gray-900 dark:text-white">Aus deinen Favoriten hinzufügen</h3>
             <div class="mt-4">
                 <flux:input wire:model.live.debounce.300ms="favoriteSearch" placeholder="Favoriten durchsuchen..." />
             </div>
