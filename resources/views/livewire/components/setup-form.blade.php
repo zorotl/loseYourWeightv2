@@ -58,12 +58,7 @@ new class extends Component
             type="number"
             required
         />
-        <flux:input
-            wire:model="date_of_birth"
-            :label="__('Geburtsdatum')"
-            type="date"
-            required
-        />
+        <x-date-picker-input wire:model="date_of_birth" label="{{ __('Geburtsdatum') }}" />
         <flux:select
             wire:model="gender"
             :label="__('Geschlecht')"
@@ -92,13 +87,7 @@ new class extends Component
             step="0.1"
             required
         />
-        <flux:input
-            wire:model="target_date"
-            :label="__('Zieldatum')"
-            :hint="__('Bis wann möchtest du dein Ziel erreichen?')"
-            type="date"
-            required
-        />
+        <x-date-picker-input wire:model="target_date" label="{{ __('Zieldatum') }}" />
         <div class="pt-2">
             <flux:button type="submit" variant="primary" class="w-full">
                 {{ __('Speichern und Starten') }}

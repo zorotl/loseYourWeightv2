@@ -15,6 +15,12 @@ class extends Component
         $this->date = $date ? Carbon::parse($date)->toDateString() : today()->toDateString();
     }
 
+    // NEU: Diese Methode wird aufgerufen, wenn wire:model="date" sich ändert
+    public function updatedDate($value): void
+    {
+        $this->jumpToDate($value);
+    }
+
     public function previousDay(): void
     {
         $newDate = Carbon::parse($this->date)->subDay()->toDateString();
@@ -54,20 +60,8 @@ class extends Component
         >
             <flux:button wire:click="previousDay" variant="outline">&larr; Vorheriger Tag</flux:button>
             
-            <div class="relative flex cursor-pointer items-center" @click="$refs.dateInput.click()">
-                 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-gray-400">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                    </svg>
-                </div>
-    
-                <input 
-                    x-ref="dateInput" 
-                    type="text" 
-                    readonly
-                    class="block w-full cursor-pointer rounded-md border-gray-300 pl-10 text-center font-semibold text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                    value="{{ \Carbon\Carbon::parse($date)->translatedFormat('l, d. F Y') }}"
-                >
+            <div class="w-64">
+                <x-date-picker-input wire:model.live="date" />
             </div>
             
             <flux:button wire:click="nextDay" variant="outline" :disabled="\Carbon\Carbon::parse($date)->isToday()">Nächster Tag &rarr;</flux:button>
