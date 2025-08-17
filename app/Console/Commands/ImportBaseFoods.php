@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Food;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class ImportBaseFoods extends Command
 {
@@ -385,7 +386,7 @@ class ImportBaseFoods extends Command
                         ],
                         [
                             'name' => data_get($product, 'product_name', $term),
-                            'brand' => data_get($product, 'brands'),
+                            'brand' => Str::limit(data_get($product, 'brands'), 250),
                             'calories' => (int) data_get($product, 'nutriments.energy-kcal_100g', 0),
                             'protein' => (float) data_get($product, 'nutriments.proteins_100g', 0),
                             'carbohydrates' => (float) data_get($product, 'nutriments.carbohydrates_100g', 0),

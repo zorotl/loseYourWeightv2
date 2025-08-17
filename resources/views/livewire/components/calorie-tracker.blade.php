@@ -366,7 +366,7 @@ new class extends Component
                                 @endif
                             @endforeach
 
-                            @if(!$apiSearched)
+                            @if(!$apiSearched && !$selectedFood)
                                 <li>
                                     <button wire:click="searchApi" class="w-full bg-indigo-50 py-3 px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900">
                                         Nicht gefunden? In der Online-Datenbank suchen...
@@ -375,7 +375,7 @@ new class extends Component
                             @endif
                         </ul>
                     </div>
-                @elseif(strlen($search) >= 3 && !$apiSearched)
+                @elseif(strlen($search) >= 3 && !$apiSearched && !$selectedFood)
                     <div class="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
                         <button wire:click="searchApi" class="w-full py-3 px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900">
                             Nichts lokales gefunden. Online suchen...
