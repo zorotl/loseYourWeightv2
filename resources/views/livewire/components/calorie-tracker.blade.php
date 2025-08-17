@@ -258,18 +258,16 @@ new class extends Component
     }
 }; ?>
 
-<div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800" wire:key="calorie-tracker-{{ $date }}">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                {{-- Dieser Titel passt sich jetzt dem Datum an --}}
-                {{ \Carbon\Carbon::parse($date)->isToday() ? 'Heutige Kalorien' : 'Kalorien vom ' . \Carbon\Carbon::parse($date)->translatedFormat('d. F') }}
-            </h3>
-            <p class="mt-1 text-sm text-gray-500">
-                Verbraucht: <span class="font-bold">{{ $this->consumedCalories() }}</span> / {{ auth()->user()->target_calories }} kcal
-            </p>
-        </div>
-        <div class="w-full md:w-1/3">
+<div class="rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-800" wire:key="calorie-tracker-{{ $date }}">    
+    <div class="flex flex-col gap-2">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            {{ \Carbon\Carbon::parse($date)->isToday() ? 'Heutige Kalorien' : 'Kalorien vom ' . \Carbon\Carbon::parse($date)->translatedFormat('d. F') }}
+        </h3>
+        <p class="text-sm text-gray-500">
+            Verbraucht: <span class="font-bold">{{ $this->consumedCalories() }}</span> / {{ auth()->user()->target_calories }} kcal
+        </p>
+        {{-- Progress bar moved directly below the text --}}
+        <div class="w-full pt-1">
             <div class="h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                 <div class="h-2.5 rounded-full bg-indigo-600" style="width: {{ $this->caloriesPercentage() }}%"></div>
             </div>

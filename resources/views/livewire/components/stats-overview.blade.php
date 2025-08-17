@@ -10,6 +10,7 @@ new class extends Component
      * Its mere existence makes Livewire re-render the component.
      */
     #[On('weight-saved')]
+    #[On('goal-updated')]
     public function refresh(): void
     {
         // Intentionally left blank.
