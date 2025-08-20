@@ -89,55 +89,86 @@
                 </div>
             </div>
         </section>
-
+        
         {{-- 4. FAQ Section --}}
         <section class="bg-gray-50 dark:bg-zinc-800 py-24 sm:py-32">
             <div class="container mx-auto px-4">
-                <h2 class="text-3xl font-bold tracking-tight text-center text-gray-900 dark:text-white sm:text-4xl">Häufig gestellte Fragen</h2>
-                <div class="mt-10 space-y-4" x-data="{ open: null }">
-                    {{-- FAQ 1 --}}
-                    <div class="rounded-lg border border-gray-200 dark:border-gray-700">
-                        <button x-on:click="open = open === 1 ? null : 1" class="flex w-full items-center justify-between p-6 text-left">
-                            <span class="font-semibold text-gray-900 dark:text-white">Ist die App wirklich komplett kostenlos?</span>
-                            <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 1}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <div x-show="open === 1" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
-                            <p>Ja. Alle Kernfunktionen sind und bleiben kostenlos. Wir planen, eventuell in ferner Zukunft dezente Werbung zu schalten, um die Serverkosten zu decken. Es wird aber keine Premium-Version oder Abofallen geben.</p>
+                <div class="mx-auto max-w-3xl">
+                    <h2 class="text-3xl font-bold tracking-tight text-center text-gray-900 dark:text-white sm:text-4xl">Häufig gestellte Fragen</h2>
+                    <div class="mt-10 space-y-4" x-data="{ open: null }">
+                        {{-- FAQ 1 (Existing) --}}
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button x-on:click="open = open === 1 ? null : 1" class="flex w-full items-center justify-between p-6 text-left">
+                                <span class="font-semibold text-gray-900 dark:text-white">Ist die App wirklich komplett kostenlos?</span>
+                                <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 1}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div x-show="open === 1" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
+                                <p>Ja. Alle Kernfunktionen sind und bleiben kostenlos. Wir planen, eventuell in ferner Zukunft dezente Werbung zu schalten, um die Serverkosten zu decken. Es wird aber keine Premium-Version oder Abofallen geben.</p>
+                            </div>
                         </div>
-                    </div>
-                    {{-- FAQ 2 --}}
-                    <div class="rounded-lg border border-gray-200 dark:border-gray-700">
-                        <button x-on:click="open = open === 2 ? null : 2" class="flex w-full items-center justify-between p-6 text-left">
-                            <span class="font-semibold text-gray-900 dark:text-white">Werden meine Daten verkauft?</span>
-                            <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 2}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <div x-show="open === 2" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
-                            <p>Nein. Deine persönlichen Daten gehören dir. Wir werden sie niemals an Dritte verkaufen. Details findest du in unserer Datenschutzerklärung.</p>
+                        {{-- FAQ 2 (Existing) --}}
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button x-on:click="open = open === 2 ? null : 2" class="flex w-full items-center justify-between p-6 text-left">
+                                <span class="font-semibold text-gray-900 dark:text-white">Werden meine Daten verkauft?</span>
+                                <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 2}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div x-show="open === 2" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
+                                <p>Nein. Deine persönlichen Daten gehören dir. Wir werden sie niemals an Dritte verkaufen. Details findest du in unserer Datenschutzerklärung.</p>
+                            </div>
                         </div>
-                    </div>
-                    {{-- FAQ 3 --}}
-                    <div class="rounded-lg border border-gray-200 dark:border-gray-700">
-                        <button x-on:click="open = open === 3 ? null : 3" class="flex w-full items-center justify-between p-6 text-left">
-                            <span class="font-semibold text-gray-900 dark:text-white">Woher kommen die Lebensmitteldaten?</span>
-                            <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 3}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <div x-show="open === 3" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
-                            <p>Wir nutzen die riesige, von der Community gepflegte Datenbank von OpenFoodFacts. Zusätzlich kannst du eigene Lebensmittel manuell eintragen, falls du etwas nicht findest.</p>
+                        {{-- FAQ 3 (Existing) --}}
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button x-on:click="open = open === 3 ? null : 3" class="flex w-full items-center justify-between p-6 text-left">
+                                <span class="font-semibold text-gray-900 dark:text-white">Woher kommen die Lebensmitteldaten?</span>
+                                <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 3}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div x-show="open === 3" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
+                                <p>Wir nutzen die riesige, von der Community gepflegte Datenbank von OpenFoodFacts. Zusätzlich kannst du eigene Lebensmittel manuell eintragen, falls du etwas nicht findest.</p>
+                            </div>
                         </div>
-                    </div>
-                    {{-- FAQ 4 --}}
-                    <div class="rounded-lg border border-gray-200 dark:border-gray-700">
-                        <button x-on:click="open = open === 4 ? null : 4" class="flex w-full items-center justify-between p-6 text-left">
-                            <span class="font-semibold text-gray-900 dark:text-white">Kann ich auch Sport und Aktivitäten tracken?</span>
-                            <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 4}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <div x-show="open === 4" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
-                            <p>Momentan nicht. `Lose Your Weight` konzentriert sich voll auf die Ernährungsseite der Gleichung ("Calories In"). Das macht die App einfach und fokussiert. Eine Funktion für "Calories Out" ist aber eine mögliche Idee für die Zukunft.</p>
+                        {{-- FAQ 4 (Existing) --}}
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button x-on:click="open = open === 4 ? null : 4" class="flex w-full items-center justify-between p-6 text-left">
+                                <span class="font-semibold text-gray-900 dark:text-white">Kann ich auch Sport und Aktivitäten tracken?</span>
+                                <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 4}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div x-show="open === 4" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
+                                <p>Momentan nicht. `Lose Your Weight` konzentriert sich voll auf die Ernährungsseite der Gleichung ("Calories In"). Das macht die App einfach und fokussiert. Eine Funktion für "Calories Out" ist aber eine mögliche Idee für die Zukunft.</p>
+                            </div>
+                        </div>
+                        {{-- FAQ 5 (NEU) --}}
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button x-on:click="open = open === 5 ? null : 5" class="flex w-full items-center justify-between p-6 text-left">
+                                <span class="font-semibold text-gray-900 dark:text-white">Warum ist die Lebensmittel-Suche manchmal langsam?</span>
+                                <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 5}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div x-show="open === 5" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
+                                <p>Unsere App durchsucht zuerst unsere schnelle, lokale Datenbank. Findet sie dort nichts, fragt sie die riesige, weltweite OpenFoodFacts-Datenbank an, was einen Moment dauern kann. Der Vorteil: Jedes von einem User gefundene Produkt wird bei uns zwischengespeichert. Die App wird also mit der Zeit für alle immer schneller.</p>
+                            </div>
+                        </div>
+                        {{-- FAQ 6 (NEU) --}}
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button x-on:click="open = open === 6 ? null : 6" class="flex w-full items-center justify-between p-6 text-left">
+                                <span class="font-semibold text-gray-900 dark:text-white">Wie genau sind die Berechnungen?</span>
+                                <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 6}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div x-show="open === 6" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
+                                <p>Wir verwenden die Mifflin-St Jeor-Formel, den aktuellen wissenschaftlichen Standard zur Berechnung des Grundumsatzes. Beachte aber bitte, dass dies immer eine Schätzung ist. Dein tatsächlicher Verbrauch kann abweichen. Diese App ist ein Werkzeug zur Orientierung und ersetzt keine professionelle medizinische oder ernährungswissenschaftliche Beratung.</p>
+                            </div>
+                        </div>
+                        {{-- FAQ 7 (NEU) --}}
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button x-on:click="open = open === 7 ? null : 7" class="flex w-full items-center justify-between p-6 text-left">
+                                <span class="font-semibold text-gray-900 dark:text-white">Kann ich Einträge für gestern nachtragen?</span>
+                                <svg class="h-6 w-6 transform text-gray-400 transition-transform" :class="{'rotate-180': open === 7}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div x-show="open === 7" x-cloak class="px-6 pb-6 text-gray-600 dark:text-gray-400 prose prose-invert max-w-none">
+                                <p>Ja. Im Menü unter "Tagesprotokoll" kannst du mit den Buttons "Vorheriger Tag" und "Nächster Tag" oder über den Kalender zu jedem beliebigen Datum navigieren und dort Einträge hinzufügen oder bearbeiten.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
-
     </div>
 </x-layouts.guest>
