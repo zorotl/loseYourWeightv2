@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified', EnsureProfileIsComplete::class])->group(f
     Volt::route('statistics', 'pages.statistics.index')->name('statistics.index');
     Volt::route('favorites', 'pages.favorites.index')->name('favorites.index');
     Volt::route('log/{date?}', 'pages.log.index')->name('log.index');
+    Volt::route('feedback', 'pages.feedback.index')->name('feedback.index');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -37,6 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified', 'can:view-admin-panel'])->prefix('admin')->name('admin.')->group(function () {
     Volt::route('/', 'pages.admin.index')->name('index');
     Volt::route('foods', 'pages.admin.foods.index')->name('foods.index');
+    Volt::route('feedback', 'pages.admin.feedback.index')->name('feedback.index');
 });
 
 require __DIR__ . '/auth.php';

@@ -301,4 +301,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $this->notify(new CustomVerifyEmail);
     }
+
+    /**
+     * A user can have many feedback entries.
+     */
+    public function feedback()
+    {
+        return $this->hasMany(\App\Models\Feedback::class);
+    }
 }

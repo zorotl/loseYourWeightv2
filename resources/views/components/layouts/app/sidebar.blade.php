@@ -29,11 +29,16 @@
                     <flux:navlist.group :heading="__('Administration')" class="grid">
                         <flux:navlist.item icon="users" :href="route('admin.index')" :current="request()->routeIs('admin.index')" wire:navigate>{{ __('Benutzer') }}</flux:navlist.item>
                         <flux:navlist.item icon="beaker" :href="route('admin.foods.index')" :current="request()->routeIs('admin.foods.index')" wire:navigate>{{ __('Lebensmittel') }}</flux:navlist.item>
+                        <flux:navlist.item icon="chat-bubble-bottom-center-text" :href="route('admin.feedback.index')" :current="request()->routeIs('admin.feedback.index')" wire:navigate>{{ __('Feedback') }}</flux:navlist.item>
                     </flux:navlist.group>
                 </flux:navlist>
             @endcan
 
-            <flux:spacer />        
+            <flux:spacer />
+            
+            <flux:navlist variant="outline">
+                <flux:navlist.item icon="chat-bubble-left-right" :href="route('feedback.index')" :current="request()->routeIs('feedback.index')" wire:navigate>{{ __('Feedback geben') }}</flux:navlist.item>
+            </flux:navlist>
 
             <!-- Desktop User Menu -->
             <flux:dropdown class="hidden lg:block" position="bottom" align="start">
