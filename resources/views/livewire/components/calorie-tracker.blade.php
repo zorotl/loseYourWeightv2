@@ -23,13 +23,14 @@ new class extends Component
 
     // Food Search properties
     public string $search = '';
-    public Collection|array $searchResults; // Can hold a Collection (local) or array (API)
+    public Collection|array $searchResults;
     public ?array $selectedFood = null;
 
     // Quantity properties
     #[Rule('required|integer|min:1|max:5000')]
     public int|string $quantity = '';
     public array $favoriteQuantities = [];
+    public array $entryQuantities = [];
 
     // Meal Search properties
     public string $mealSearch = '';
@@ -61,17 +62,14 @@ new class extends Component
         $this->loadEntries();
     }
 
-    // REFACTORED: Searches local DB first
     public function updatedSearch(string $value): void
     {
         $this->selectedFood = null;
         $this->apiSearched = false;
-
         if (strlen($value) < 3) {
             $this->searchResults = new Collection();
             return;
         }
-
         $this->searchResults = Food::query()
             ->where('name', 'like', '%' . $value . '%')
             ->orWhere('brand', 'like', '%' . $value . '%')
@@ -79,16 +77,13 @@ new class extends Component
             ->get();
     }
 
-    // NEW: Explicitly searches the API
     public function searchApi(): void
     {
         if (strlen($this->search) < 3) return;
-
         try {
             $response = Http::timeout(4)->get('https://world.openfoodfacts.org/cgi/search.pl', [
                 'search_terms' => $this->search, 'search_simple' => 1, 'action' => 'process', 'json' => 1, 'page_size' => 10,
             ]);
-            
             if ($response->ok()) {
                 $this->searchResults = $response->json()['products'] ?? [];
                 $this->apiSearched = true;
@@ -101,24 +96,19 @@ new class extends Component
         }
     }
 
-    // REFACTORED: Handles both local Models and API arrays
     public function selectFood($foodData, bool $isApiResult = false): void
     {
         $foodDetails = [];
-
         if ($isApiResult) {
             $productData = collect($this->searchResults)->firstWhere('code', $foodData);
             if (!$productData) return;
-
             $calories = data_get($productData, 'nutriments.energy-kcal_100g');
             if (!$calories) {
                 $this->dispatch('show-toast', message: 'Dieses Produkt hat keine Kalorienangaben.', type: 'error');
                 return;
             }
-
             $foodDetails = [
-                'source' => 'openfoodfacts',
-                'source_id' => $productData['code'],
+                'source' => 'openfoodfacts', 'source_id' => $productData['code'],
                 'name' => data_get($productData, 'product_name', 'Unknown'),
                 'brand' => data_get($productData, 'brands', 'Unknown'),
                 'calories' => (int) $calories,
@@ -129,19 +119,13 @@ new class extends Component
         } else {
             $food = Food::find($foodData);
             if (!$food) return;
-
             $foodDetails = [
-                'source' => $food->source,
-                'source_id' => $food->source_id,
-                'name' => $food->name,
-                'brand' => $food->brand,
-                'calories' => $food->calories,
-                'protein' => $food->protein,
-                'carbohydrates' => $food->carbohydrates,
-                'fat' => $food->fat,
+                'source' => $food->source, 'source_id' => $food->source_id,
+                'name' => $food->name, 'brand' => $food->brand,
+                'calories' => $food->calories, 'protein' => $food->protein,
+                'carbohydrates' => $food->carbohydrates, 'fat' => $food->fat,
             ];
         }
-
         $this->selectedFood = $foodDetails;
         $this->searchResults = new Collection();
         $this->search = $this->selectedFood['name'];
@@ -177,8 +161,7 @@ new class extends Component
         if (!$food) return;
         $quantityToLog = $this->favoriteQuantities[$foodId];
         auth()->user()->foodLogEntries()->create([
-            'food_id' => $food->id,
-            'quantity_grams' => $quantityToLog,
+            'food_id' => $food->id, 'quantity_grams' => $quantityToLog,
             'calories' => round(($food->calories / 100) * $quantityToLog),
             'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
@@ -194,18 +177,10 @@ new class extends Component
         if (!$this->selectedFood) return;
         $food = Food::firstOrCreate(
             ['source' => $this->selectedFood['source'], 'source_id' => $this->selectedFood['source_id']],
-            [
-                'name' => $this->selectedFood['name'], 
-                'brand' => $this->selectedFood['brand'], 
-                'calories' => $this->selectedFood['calories'],
-                'protein' => $this->selectedFood['protein'],
-                'carbohydrates' => $this->selectedFood['carbohydrates'],
-                'fat' => $this->selectedFood['fat'],
-            ]
+            ['name' => $this->selectedFood['name'], 'brand' => $this->selectedFood['brand'], 'calories' => $this->selectedFood['calories'], 'protein' => $this->selectedFood['protein'], 'carbohydrates' => $this->selectedFood['carbohydrates'], 'fat' => $this->selectedFood['fat']]
         );
         auth()->user()->foodLogEntries()->create([
-            'food_id' => $food->id,
-            'quantity_grams' => $this->quantity,
+            'food_id' => $food->id, 'quantity_grams' => $this->quantity,
             'calories' => round(($food->calories / 100) * $this->quantity),
             'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
@@ -216,18 +191,13 @@ new class extends Component
 
     public function logManualFood(): void
     {
-        $validated = $this->validate([
-            'manualFoodName' => 'required|string|max:100',
-            'manualCaloriesPer100g' => 'required|integer|min:0|max:5000',
-            'quantity' => 'required|integer|min:1|max:5000',
-        ]);
+        $validated = $this->validate(['manualFoodName' => 'required|string|max:100', 'manualCaloriesPer100g' => 'required|integer|min:0|max:5000', 'quantity' => 'required|integer|min:1|max:5000']);
         $food = Food::firstOrCreate(
             ['name' => $validated['manualFoodName'], 'creator_id' => auth()->id(), 'source' => 'user'],
             ['calories' => $validated['manualCaloriesPer100g']]
         );
         auth()->user()->foodLogEntries()->create([
-            'food_id' => $food->id,
-            'quantity_grams' => $validated['quantity'],
+            'food_id' => $food->id, 'quantity_grams' => $validated['quantity'],
             'calories' => round(($food->calories / 100) * $validated['quantity']),
             'consumed_at' => Carbon::parse($this->date)->setTimeFrom(now()),
         ]);
@@ -239,10 +209,7 @@ new class extends Component
 
     public function updatedMealSearch(string $value): void
     {
-        $this->mealSearchResults = auth()->user()
-            ->meals()
-            ->where('name', 'like', '%' . $value . '%')
-            ->get();
+        $this->mealSearchResults = auth()->user()->meals()->where('name', 'like', '%' . $value . '%')->get();
     }
 
     public function logMeal(int $mealId): void
@@ -254,18 +221,13 @@ new class extends Component
         $consumedAt = Carbon::parse($this->date)->setTimeFrom($now);
         foreach ($meal->foods as $food) {
             $logEntries[] = [
-                'user_id' => auth()->id(),
-                'food_id' => $food->id,
+                'user_id' => auth()->id(), 'food_id' => $food->id,
                 'quantity_grams' => $food->pivot->quantity_grams,
                 'calories' => round(($food->calories / 100) * $food->pivot->quantity_grams),
-                'consumed_at' => $consumedAt,
-                'created_at' => $now,
-                'updated_at' => $now,
+                'consumed_at' => $consumedAt, 'created_at' => $now, 'updated_at' => $now,
             ];
         }
-        if (!empty($logEntries)) {
-            FoodLogEntry::insert($logEntries);
-        }
+        if (!empty($logEntries)) { FoodLogEntry::insert($logEntries); }
         $this->loadEntries();
         $this->activeTab = 'food';
         $this->dispatch('food-logged');
@@ -280,6 +242,20 @@ new class extends Component
             $this->dispatch('food-logged');
         }
     }
+    
+    public function updateEntryQuantity(int $entryId): void
+    {
+        $this->validate(['entryQuantities.' . $entryId => 'required|integer|min:1|max:9999']);
+        $entry = FoodLogEntry::where('id', $entryId)->where('user_id', auth()->id())->first();
+        if ($entry) {
+            $newQuantity = $this->entryQuantities[$entryId];
+            $recalculatedCalories = round(($entry->food->calories / 100) * $newQuantity);
+            $entry->update(['quantity_grams' => $newQuantity, 'calories' => $recalculatedCalories]);
+            $this->loadEntries();
+            $this->dispatch('food-logged');
+            $this->dispatch('show-toast', message: 'Eintrag aktualisiert.');
+        }
+    }
 
     public function loadEntries(): void
     {
@@ -288,18 +264,13 @@ new class extends Component
             ->whereDate('consumed_at', $this->date)
             ->orderBy('consumed_at', 'desc')
             ->get();
+        $this->entryQuantities = $this->todaysEntries->pluck('quantity_grams', 'id')->all();
     }
 
     #[Computed]
-    public function consumedCalories(): int
-    {
-        return $this->todaysEntries->sum('calories');
-    }
+    public function consumedCalories(): int { return $this->todaysEntries->sum('calories'); }
     #[Computed]
-    public function remainingCalories(): int
-    {
-        return auth()->user()->target_calories - $this->consumedCalories();
-    }
+    public function remainingCalories(): int { return auth()->user()->target_calories - $this->consumedCalories(); }
     #[Computed]
     public function caloriesPercentage(): int
     {
@@ -343,7 +314,6 @@ new class extends Component
             <h3 class="text-base font-semibold text-gray-900 dark:text-white">Lebensmittel hinzufügen</h3>
             <div class="relative mt-4">
                 <flux:input wire:model.live.debounce.300ms="search" placeholder="Suche zuerst in deiner lokalen Datenbank..." />
-                
                 @if(strlen($search) >= 3 && count($searchResults) > 0)
                     <div class="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
                         <ul class="max-h-72 divide-y divide-gray-200 dark:divide-gray-700 overflow-auto rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
@@ -383,7 +353,6 @@ new class extends Component
                     </div>
                 @endif
             </div>
-
             @if($selectedFood)
                 <form wire:submit.prevent="logSelectedFood" class="mt-4 flex items-end gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
                     <div class="flex-1">
@@ -493,7 +462,16 @@ new class extends Component
                         </button>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ $entry->food->name }}</p>
-                            <p class="truncate text-sm text-gray-500">{{ $entry->quantity_grams }}g - {{ $entry->consumed_at->format('H:i') }} Uhr</p>
+                            <div class="flex items-center gap-2">
+                                <input 
+                                    type="number" 
+                                    wire:model="entryQuantities.{{ $entry->id }}" 
+                                    wire:keydown.enter="updateEntryQuantity({{ $entry->id }})" 
+                                    wire:blur="updateEntryQuantity({{ $entry->id }})"
+                                    class="w-20 rounded-md border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 shadow-sm transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                >
+                                <span class="text-sm text-gray-500">g - {{ $entry->consumed_at->format('H:i') }} Uhr</span>
+                            </div>
                         </div>
                         <div class="text-right">
                            <p class="text-sm font-semibold text-indigo-600">{{ $entry->calories }} kcal</p>
