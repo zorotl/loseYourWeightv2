@@ -420,7 +420,7 @@ new class extends Component
         <div x-show="$wire.activeTab === 'meal'" x-cloak class="mt-4">
             <h3 class="text-base font-semibold text-gray-900 dark:text-white">Gespeicherte Mahlzeiten hinzufügen</h3>
             <div class="mt-4">
-                <flux:input wire:model.live.debounce.300ms="mealSearch" :label="__('Mahlzeit suchen...')" />
+                <flux:input wire:model.live.debounce.300ms="mealSearch" placeholder="Mahlzeit suchen..." />
                 <div class="mt-4 flow-root">
                     <ul role="list" class="-my-5 divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($mealSearchResults as $meal)

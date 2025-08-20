@@ -24,7 +24,8 @@ class extends Component
     // Properties for adding new ingredients
     public string $addIngredientTab = 'search'; // 'search' or 'favorites'
     public string $search = '';
-    public array $searchResults = [];
+    public bool $apiSearched = false;
+    public Collection|array $searchResults = [];
     public ?array $selectedFood = null;
     public ?Collection $favoriteFoods = null;
     
@@ -34,7 +35,6 @@ class extends Component
 
     public array $favoriteQuantities = [];
 
-
     public function mount(Meal $meal): void
     {
         $this->authorize('view', $meal);
@@ -42,6 +42,7 @@ class extends Component
         $this->mealName = $this->meal->name;
         $this->updateQuantitiesArray();
         $this->favoriteFoods = auth()->user()->favoriteFoods;
+        $this->searchResults = new Collection();
     }
 
     public function updateName(): void
@@ -103,31 +104,70 @@ class extends Component
     
     public function updatedSearch(string $value): void
     {
+        $this->selectedFood = null;
+        $this->apiSearched = false;
         if (strlen($value) < 3) {
-            $this->searchResults = [];
-            $this->selectedFood = null;
+            $this->searchResults = new Collection();
             return;
         }
-        $response = Http::get('https://world.openfoodfacts.org/cgi/search.pl', [
-            'search_terms' => $value, 'search_simple' => 1, 'action' => 'process', 'json' => 1, 'page_size' => 5,
-        ]);
-        $this->searchResults = $response->ok() ? $response->json()['products'] ?? [] : [];
+        $this->searchResults = Food::query()
+            ->where('name', 'like', '%' . $value . '%')
+            ->orWhere('brand', 'like', '%' . $value . '%')
+            ->take(5)
+            ->get();
     }
     
-    public function selectFood(string $productCode): void
+    public function searchApi(): void
     {
-        $productData = collect($this->searchResults)->firstWhere('code', $productCode);
-        if (!$productData) return;
-        $calories = data_get($productData, 'nutriments.energy-kcal_100g');
-        if (!$calories) return;
-        $this->selectedFood = [
-            'source' => 'openfoodfacts',
-            'source_id' => $productData['code'],
-            'name' => data_get($productData, 'product_name', 'Unknown'),
-            'brand' => data_get($productData, 'brands', 'Unknown'),
-            'calories' => (int) $calories,
-        ];
-        $this->searchResults = [];
+        if (strlen($this->search) < 3) return;
+        try {
+            $response = Http::timeout(4)->get('https://world.openfoodfacts.org/cgi/search.pl', [
+                'search_terms' => $this->search, 'search_simple' => 1, 'action' => 'process', 'json' => 1, 'page_size' => 5,
+            ]);
+            if ($response->ok()) {
+                $this->searchResults = $response->json()['products'] ?? [];
+                $this->apiSearched = true;
+            } else {
+                $this->searchResults = [];
+            }
+        } catch (ConnectionException $e) {
+            $this->searchResults = [];
+            $this->dispatch('show-toast', message: 'Die Lebensmittel-API ist nicht erreichbar.', type: 'error');
+        }
+    }
+    
+    public function selectFood($foodData, bool $isApiResult = false): void
+    {
+        $foodDetails = [];
+        if ($isApiResult) {
+            $productData = collect($this->searchResults)->firstWhere('code', $foodData);
+            if (!$productData) return;
+            $calories = data_get($productData, 'nutriments.energy-kcal_100g');
+            if (!$calories) {
+                $this->dispatch('show-toast', message: 'Dieses Produkt hat keine Kalorienangaben.', type: 'error');
+                return;
+            }
+            $foodDetails = [
+                'source' => 'openfoodfacts', 'source_id' => $productData['code'],
+                'name' => data_get($productData, 'product_name', 'Unknown'),
+                'brand' => data_get($productData, 'brands', 'Unknown'),
+                'calories' => (int) $calories,
+                'protein' => (float) data_get($productData, 'nutriments.proteins_100g', 0),
+                'carbohydrates' => (float) data_get($productData, 'nutriments.carbohydrates_100g', 0),
+                'fat' => (float) data_get($productData, 'nutriments.fat_100g', 0),
+            ];
+        } else {
+            $food = Food::find($foodData);
+            if (!$food) return;
+            $foodDetails = [
+                'source' => $food->source, 'source_id' => $food->source_id,
+                'name' => $food->name, 'brand' => $food->brand,
+                'calories' => $food->calories, 'protein' => $food->protein,
+                'carbohydrates' => $food->carbohydrates, 'fat' => $food->fat,
+            ];
+        }
+        $this->selectedFood = $foodDetails;
+        $this->searchResults = new Collection();
         $this->search = $this->selectedFood['name'];
     }
     
@@ -190,16 +230,44 @@ class extends Component
 
         <div x-show="$wire.addIngredientTab === 'search'" x-cloak>
             <div class="relative mt-4">
-                <flux:input wire:model.live.debounce.500ms="search" :label="__('Lebensmittel suchen...')" placeholder="z.B. Pouletbrust" />
-                @if(!empty($searchResults))
+                <flux:input wire:model.live.debounce.300ms="search" placeholder="Suche zuerst in deiner lokalen Datenbank..." />
+                                
+                @if(strlen($search) >= 3 && count($searchResults) > 0)
                     <div class="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
-                        <ul class="max-h-60 overflow-auto rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                            @foreach($searchResults as $product)
-                                <li wire:click="selectFood('{{ $product['code'] }}')" class="relative cursor-pointer select-none py-2 px-4 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
-                                    <span class="block truncate">{{ data_get($product, 'product_name', 'Unbekannt') }}</span>
-                                </li>
+                        <ul class="max-h-72 divide-y divide-gray-200 dark:divide-gray-700 overflow-auto rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                            @foreach($searchResults as $result)
+                                @if($apiSearched)
+                                    <li wire:click="selectFood('{{ $result['code'] }}', true)" class="relative cursor-pointer select-none py-2 px-4 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+                                        <span class="block truncate">{{ data_get($result, 'product_name', 'Unbekannt') }}</span>
+                                        <span class="block truncate text-xs text-gray-500">{{ data_get($result, 'brands', 'Unbekannte Marke') }}</span>
+                                    </li>
+                                @else
+                                    <li wire:click="selectFood({{ $result->id }}, false)" class="relative cursor-pointer select-none py-2 px-4 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+                                        <div class="flex justify-between">
+                                            <span>
+                                                <span class="block truncate font-medium">{{ $result->name }}</span>
+                                                <span class="block truncate text-xs text-gray-500">{{ $result->brand }}</span>
+                                            </span>
+                                            <span class="text-xs text-green-600">Lokal</span>
+                                        </div>
+                                    </li>
+                                @endif
                             @endforeach
+
+                            @if(!$apiSearched && !$selectedFood)
+                                <li>
+                                    <button wire:click="searchApi" class="w-full bg-indigo-50 py-3 px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900">
+                                        Nicht gefunden? In der Online-Datenbank suchen...
+                                    </button>
+                                </li>
+                            @endif
                         </ul>
+                    </div>
+                @elseif(strlen($search) >= 3 && !$apiSearched && !$selectedFood)
+                    <div class="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                        <button wire:click="searchApi" class="w-full py-3 px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900">
+                            Nichts lokales gefunden. Online suchen...
+                        </button>
                     </div>
                 @endif
             </div>
